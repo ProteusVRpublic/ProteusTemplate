@@ -2,6 +2,8 @@
 
 Simple. No plugins. No fuss.
 
+Video at https://www.youtube.com/watch?v=ml2xgiQ41BY 
+
 #Features#
 * A heavily-modified version of Epic’s VR Template plus:
  *3 fully animated controllers meshes: Hands (like Oculus Avatar), Oculus Touch controllers and HTC Vive controllers
@@ -50,7 +52,7 @@ This template is very simple, no plugins, no fuss. It gives a good start to use 
 #How can I install it?#
 Files can be found at https://1drv.ms/f/s!Av77lIIxt2OY0XGGW8UDwykohjuT  
 GitHub version at https://github.com/ProteusVR/ProteusTemplate  (you need to be logged to Github to open the link) 
-Main infos found in the forum at https://forums.unrealengine.com/showthread.php?106609-Steam-VR-Template 
+Main infos found in the forum at https://forums.unrealengine.com/showthread.php?133957-Single-Multiplayer-Touch-amp-Vive-Proteus-blueprint-only-Template 
 To install as a template, just unzip into the appropriate templates directory like C:\Program Files\Unreal Engine[Version]\Templates for launcher version or[ForkLocation]\UE4\Templates for source version. Launch a new project, and you'll find it in the blueprint section.
 To install as a project file, unzip in your usual projects folder. Then, delete the file /Config/TemplateDefs.ini and you’re ready to go.
 IMPORTANT: If you open it like a regular project without deleting the .ini file, you’ll get errors messages.
