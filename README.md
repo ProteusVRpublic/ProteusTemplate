@@ -61,7 +61,7 @@ Use it directly or import it to another project, by migrating the ProteusSingle 
 3.	In settings/General Settings/Framerate
 4.	In settings/Rendering
 
-### So, what is this is about?
+### So, what is this about?
 This template consists of HTC Vive and Oculus Rift compatible pawn and settings, ready to drop in your game. So what you can do is choose the features you want, and build yourself/modify a pawn based on the functionalities you need.
 Source material
 
