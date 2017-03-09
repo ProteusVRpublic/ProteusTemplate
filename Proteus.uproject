@@ -1,11 +1,11 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "4.14",
+	"EngineAssociation": "4.15",
 	"Category": "",
 	"Description": "",
 	"Plugins": [
 		{
-			"Name": "OnlineSubsystemOculus",
+			"Name": "OnlineSubsystemSteam",
 			"Enabled": true
 		}
 	],
