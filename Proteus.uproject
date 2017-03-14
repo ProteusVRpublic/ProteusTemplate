@@ -5,7 +5,7 @@
 	"Description": "",
 	"Plugins": [
 		{
-			"Name": "OnlineSubsystemOculus",
+			"Name": "OnlineSubsystemSteam",
 			"Enabled": true
 		}
 	],
