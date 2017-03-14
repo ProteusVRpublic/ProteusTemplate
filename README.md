@@ -22,39 +22,14 @@ Video at https://www.youtube.com/watch?v=ml2xgiQ41BY
  *Rumble functions adapted to work with Touch & Vive
  *UI interactions
  *Network and single player mode
- *Works via LAN, Steam an Oculus networks (version 1.1)
- *If Oculus Network is used, Oculus Avatar will be used if present (version 1.2)
- *If not, default Avatar is used
+ *Works via LAN or Steam (Version 2.0 and up)
 
-#Version 1.0 (Jan 13, 2017)#
+#Latest Versions#
+
+#Version 1.1 (March 13, 2017)#
 #SINGLE PLAYER MODE#
-#How does it work?#
-Use it directly or import it to another project, by migrating the ProteusSIngle folder into the project
-1.	Set the desired settings in Settings structure file
-2.	Set VR_GameMode as desired gamemode
-3.	In settings/General Settings/Framerate
-4.	In settings/Rendering
 
-#So, what this is about?#
-This template consists of HTC Vive and Oculus Rift compatible pawn and settings, ready to drop in your game. So what you can do is choose the features you want, and build yourself/modify a pawn based on the functionalities you need.
-Source material
-* Epic VR template
-* Epic Couch Knights (for avatar head)
- *All other meshes, animations and blueprints are from Proteus
-
-#Which HMD works with the template?#
-The template is optimized for the HTC Vive and Oculus Rift with Vive or Touch controllers w/wo gamepad
-Which Unreal Engine 4 version works with the template?
-The template has been developed and tested with Unreal Engine 4.14.3
-Another VR Template? There’s already a ton of it.
-This template is very simple, no plugins, no fuss. It gives a good start to use Touch and Vive controllers, in single or multiplayer mode.
-
-#How can I install it?#
-Files can be found at https://1drv.ms/f/s!Av77lIIxt2OY0XGGW8UDwykohjuT  
-GitHub version at https://github.com/ProteusVR/ProteusTemplate  (you need to be logged to Github to open the link) 
-Main infos found in the forum at https://forums.unrealengine.com/showthread.php?133957-Single-Multiplayer-Touch-amp-Vive-Proteus-blueprint-only-Template 
-To install as a template, just unzip into the appropriate templates directory like C:\Program Files\Unreal Engine[Version]\Templates for launcher version or[ForkLocation]\UE4\Templates for source version. Launch a new project, and you'll find it in the blueprint section.
-To install as a project file, unzip in your usual projects folder. Then, delete the file /Config/TemplateDefs.ini and you’re ready to go.
-IMPORTANT: If you open it like a regular project without deleting the .ini file, you’ll get errors messages.
+#Version 2.1 (March 13, 2017)#
+#MULTI-PLAYER MODE#
 
 Please read the pdf document for the complete instructions.
