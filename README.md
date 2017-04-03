@@ -22,6 +22,7 @@ Video at https://www.youtube.com/watch?v=ml2xgiQ41BY
  *Rumble functions adapted to work with Touch & Vive
  *UI interactions
  *Network and single player mode
+ *Vive Tracker compatible
  *Works via LAN or Steam (Version 2.0 and up)
 
 #Latest Versions#
@@ -29,7 +30,20 @@ Video at https://www.youtube.com/watch?v=ml2xgiQ41BY
 #Version 1.1 (March 13, 2017)#
 #SINGLE PLAYER MODE#
 
-#Version 2.1 (March 13, 2017)#
+#Version 2.2 (April 03, 2017)#
 #MULTI-PLAYER MODE#
+
+#Latest changelog#
+*[FIXED] Oculus/Vive cross-platform
+*[FIXED] Vive controller not responding
+*[FIXED] Avatar selection in the menu corresponds to Avatar spawned in the MultiMap
+*[FIXED] VR Settings
+*[FIXED] Player Settings are saved every game
+
+*[IMPROVED] Now inputs are 100% working server and client side
+*[IMPROVED] Big reduction on lag client-side
+*[IMPROVED] All blueprints have been revised and functions optimized
+
+*[NEW FEATURE] Added a Vive Tracker. If you have a Vive Tracker detected, it will automatically spawn in the Main Menu Map
 
 Please read the pdf document for the complete instructions.
