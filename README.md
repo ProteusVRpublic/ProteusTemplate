@@ -27,11 +27,9 @@ Video at https://www.youtube.com/watch?v=ml2xgiQ41BY
 
 # Latest Versions #
 
-# Version 1.1 (March 13, 2017) #
-# SINGLE PLAYER MODE #
+# Version 1.1 (March 13, 2017) SINGLE PLAYER MODE #
 
-# Version 2.2 (April 03, 2017) #
-# MULTI-PLAYER MODE #
+# Version 2.2 (April 03, 2017) MULTI-PLAYER MODE #
 
 # Latest changelog #
 * [FIXED] Oculus/Vive cross-platform
@@ -40,9 +38,9 @@ Video at https://www.youtube.com/watch?v=ml2xgiQ41BY
 * [FIXED] VR Settings
 * [FIXED] Player Settings are saved every game
 
-*[IMPROVED] Now inputs are 100% working server and client side
-*[IMPROVED] Big reduction on lag client-side
-*[IMPROVED] All blueprints have been revised and functions optimized
+* [IMPROVED] Now inputs are 100% working server and client side
+* [IMPROVED] Big reduction on lag client-side
+* [IMPROVED] All blueprints have been revised and functions optimized
 
 * [NEW FEATURE] Added a Vive Tracker. If you have a Vive Tracker detected, it will automatically spawn in the Main Menu Map
 
