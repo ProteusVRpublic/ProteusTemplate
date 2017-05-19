@@ -20,28 +20,38 @@ Video at https://www.youtube.com/watch?v=ml2xgiQ41BY
  * Can be spawned (turned off by default) to print useful infos / debug
  * Avatar head
  * Rumble functions adapted to work with Touch & Vive
- * UI interactions
+ * UI interactions, VR keyboard
+ * Fade out vision when head goes through objects with VRCollision enabled
+ * Skeletal socket use when grabbing objects
+ * Vive Tracker tracking
  * Network and single player mode
- * Vive Tracker compatible
- * Works via LAN or Steam (Version 2.0 and up)
+ * Works single player, or multiplayer via LAN, Steam or Oculus Network
+ * Direct IP Connect
+ * Oculus Direct Connect
+ * VOIP
 
 # Latest Versions #
 
-# Version 1.1 (March 13, 2017) SINGLE PLAYER MODE #
+# Version 1.2 (May 18, 2017) SINGLE PLAYER MODE #
 
-# Version 2.2 (April 03, 2017) MULTI-PLAYER MODE #
+# Version 2.3 (May 18, 2017) MULTI-PLAYER MODE #
 
 # Latest changelog #
-* [FIXED] Oculus/Vive cross-platform
-* [FIXED] Vive controller not responding
-* [FIXED] Avatar selection in the menu corresponds to Avatar spawned in the MultiMap
-* [FIXED] VR Settings
-* [FIXED] Player Settings are saved every game
-
-* [IMPROVED] Now inputs are 100% working server and client side
-* [IMPROVED] Big reduction on lag client-side
-* [IMPROVED] All blueprints have been revised and functions optimized
-
-* [NEW FEATURE] Added a Vive Tracker. If you have a Vive Tracker detected, it will automatically spawn in the Main Menu Map
+Single player (1.2) and Multiplayer (2.3)
+* Fade out vision when head goes through objects with VRCollision enabled
+* Skeletal socket use when grabbing objects
+* Single/Multiple Vive Trackers tracking
+* Vive Trigger input clamped
+* General optimization of all blueprints
+Multiplayer only (2.3)
+* Session selection via Steam and LAN
+* Oculus direct connect
+* Direct IP Connect
+* VOIP for LAN & Steam
+* VR Keyboard for menus
+* Multiplayer Vive Tracker tracking
+* [FIXED] Avatar material client‐client
+* [FIXED] Playground client‐side
+* Network optimizations
 
 Please read the pdf document for the complete instructions.
