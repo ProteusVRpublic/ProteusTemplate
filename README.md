@@ -1,4 +1,4 @@
-﻿### Proteus Template###
+﻿### Proteus Template
 
 Simple. No plugins. No fuss.
 
