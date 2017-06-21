@@ -1,4 +1,4 @@
-﻿### Proteus Template ###
+﻿### Proteus Template
 
 Simple. No plugins. No fuss.
 
@@ -32,26 +32,18 @@ Video at https://www.youtube.com/watch?v=ml2xgiQ41BY
 
 # Latest Versions #
 
-# Version 1.2 (May 18, 2017) SINGLE PLAYER MODE #
-
-# Version 2.3 (May 18, 2017) MULTI-PLAYER MODE #
+# Version 3.0 (June 21, 2017) #
 
 # Latest changelog #
-Single player (1.2) and Multiplayer (2.3)
-* Fade out vision when head goes through objects with VRCollision enabled
-* Skeletal socket use when grabbing objects
-* Single/Multiple Vive Trackers tracking
-* Vive Trigger input clamped
-* General optimization of all blueprints
-Multiplayer only (2.3)
-* Session selection via Steam and LAN
-* Oculus direct connect
-* Direct IP Connect
-* VOIP for LAN & Steam
-* VR Keyboard for menus
-* Multiplayer Vive Tracker tracking
-* [FIXED] Avatar material client‐client
-* [FIXED] Playground client‐side
-* Network optimizations
+* Update to Unreal 4.16.1
+* Everything has been redone from the ground. Rather than adapting Epic’s VR template, all functions have been redone with multiplayer in mind. Always lost my mind doing it but it’s done.
+* VR Tracker: The mesh has been changed for a very simple one, preventing cooking problems. Adding/removing Vive Trackers is now working well whether the owner is a listen-server or a client.
+* The grabbing functions and interactive objects are now fully compatible with the VR Interaction Kit (included).
+* Major multiplayer optimization has been done, with very good replication on fast connections.
+* All bugs related from previous version solved.
+* Works Single or Multiplayer
+* Oculus Avatar: pre-wiring done, integrate with my mini-plugin “Proteus Avatars” if present (soon)
+* Inclusion of a 3rd person “Test Pawn”, for debugging and do all kind of tests
 
-Please read the pdf document for the complete instructions.
+
+Please read the pdf document for the complete instructions. It is found at https://1drv.ms/f/s!Av77lIIxt2OY0XGGW8UDwykohjuT  
