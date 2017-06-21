@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "4.15",
+	"EngineAssociation": "4.16",
 	"Category": "",
 	"Description": "",
 	"Plugins": [
@@ -9,12 +9,12 @@
 			"Enabled": true
 		},
 		{
-			"Name": "OculusAudio",
+			"Name": "OnlineSubsystemOculus",
 			"Enabled": true
 		},
 		{
-			"Name": "OnlineSubsystemOculus",
-			"Enabled": true
+			"Name": "OnlineSubsystemGooglePlay",
+			"Enabled": false
 		}
 	],
 	"TargetPlatforms": [
