@@ -29,21 +29,14 @@ Video at https://www.youtube.com/watch?v=ml2xgiQ41BY
  * Direct IP Connect
  * Oculus Direct Connect
  * VOIP
+ * Oculus Avatars
 
 # Latest Versions #
 
-# Version 3.0 (June 21, 2017) #
+# Version 3.1 (July 26, 2017) #
 
 # Latest changelog #
-* Update to Unreal 4.16.1
-* Everything has been redone from the ground. Rather than adapting Epic’s VR template, all functions have been redone with multiplayer in mind. Always lost my mind doing it but it’s done.
-* VR Tracker: The mesh has been changed for a very simple one, preventing cooking problems. Adding/removing Vive Trackers is now working well whether the owner is a listen-server or a client.
-* The grabbing functions and interactive objects are now fully compatible with the VR Interaction Kit (included).
-* Major multiplayer optimization has been done, with very good replication on fast connections.
-* All bugs related from previous version solved.
-* Works Single or Multiplayer
-* Oculus Avatar: pre-wiring done, integrate with my mini-plugin “Proteus Avatars” if present (soon)
-* Inclusion of a 3rd person “Test Pawn”, for debugging and do all kind of tests
-
+* Simplification of functions, most delays removed
+* 2 versions: Steam/Lan and Oculus Avatars, single and multiplayer (experimental)
 
 Please read the pdf document for the complete instructions. It is found at https://1drv.ms/f/s!Av77lIIxt2OY0XGGW8UDwykohjuT  
