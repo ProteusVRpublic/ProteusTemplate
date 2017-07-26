@@ -2,22 +2,10 @@
 	"FileVersion": 3,
 	"EngineAssociation": "4.16",
 	"Category": "",
-	"Description": "Oculus Avatar plugin for the Proteus Template",
-	"Modules": [
-		{
-			"Name": "Proteus",
-			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"AdditionalDependencies": [
-				"Engine",
-				"OnlineSubsystem",
-				"OnlineSubsystemUtils"
-			]
-		}
-	],
+	"Description": "",
 	"Plugins": [
 		{
-			"Name": "OculusAudio",
+			"Name": "OnlineSubsystemSteam",
 			"Enabled": true
 		},
 		{
@@ -25,11 +13,7 @@
 			"Enabled": true
 		},
 		{
-			"Name": "OvrAvatar",
-			"Enabled": true
-		},
-		{
-			"Name": "SteamVR",
+			"Name": "OnlineSubsystemGooglePlay",
 			"Enabled": false
 		}
 	],
