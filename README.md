@@ -33,7 +33,7 @@ Video at https://www.youtube.com/watch?v=ml2xgiQ41BY
 
 # Latest Versions #
 
-# Version 3.1 (July 26, 2017) #
+# Version 3.1 - Oculus Avatars Version (July 26, 2017) #
 
 # Latest changelog #
 * Simplification of functions, most delays removed
