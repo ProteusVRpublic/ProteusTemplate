@@ -33,10 +33,11 @@ Video at https://www.youtube.com/watch?v=ml2xgiQ41BY
 
 # Latest Versions #
 
-# Version 3.1 (July 26, 2017) #
+# Version 3.1.1 (July 27, 2017) #
 
 # Latest changelog #
 * Simplification of functions, most delays removed
 * 2 versions: Steam/Lan and Oculus Avatars, single and multiplayer (experimental)
+* 3.1.1: 3 functions were not connected, only affecting Vive (FIXED)
 
 Please read the pdf document for the complete instructions. It is found at https://1drv.ms/f/s!Av77lIIxt2OY0XGGW8UDwykohjuT  
