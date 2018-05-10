@@ -3,11 +3,17 @@
 	"EngineAssociation": "4.19",
 	"Category": "",
 	"Description": "",
-	"Plugins": [
+	"Modules": [
 		{
-			"Name": "OnlineSubsystemSteam",
-			"Enabled": true
-		},
+			"Name": "Proteus",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		}
+	],
+	"Plugins": [
 		{
 			"Name": "OnlineSubsystemOculus",
 			"Enabled": true
@@ -42,6 +48,10 @@
 		},
 		{
 			"Name": "AndroidDeviceProfileSelector",
+			"Enabled": false
+		},
+		{
+			"Name": "SteamVR",
 			"Enabled": false
 		}
 	],
