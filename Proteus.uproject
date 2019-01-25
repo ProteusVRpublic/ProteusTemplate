@@ -1,11 +1,18 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "4.19",
+	"EngineAssociation": "{411F476C-4F06-2CE4-E63B-6487F91ABCF4}",
 	"Category": "",
 	"Description": "",
+	"Modules": [
+		{
+			"Name": "Proteus",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
 	"Plugins": [
 		{
-			"Name": "OnlineSubsystemSteam",
+			"Name": "OculusAudio",
 			"Enabled": true
 		},
 		{
@@ -13,39 +20,16 @@
 			"Enabled": true
 		},
 		{
-			"Name": "OnlineSubsystemGooglePlay",
-			"Enabled": false
-		},
-		{
-			"Name": "OnlineSubsystemIOS",
-			"Enabled": false
-		},
-		{
-			"Name": "OculusAudio",
+			"Name": "ProteusAvatars",
 			"Enabled": true
 		},
 		{
-			"Name": "AdvancedSteamSessions",
-			"Enabled": false
-		},
-		{
-			"Name": "AdvancedSessions",
-			"Enabled": false
-		},
-		{
-			"Name": "LinuxDeviceProfileSelector",
-			"Enabled": false
-		},
-		{
-			"Name": "IOSDeviceProfileSelector",
-			"Enabled": false
-		},
-		{
-			"Name": "AndroidDeviceProfileSelector",
+			"Name": "SteamVR",
 			"Enabled": false
 		}
 	],
 	"TargetPlatforms": [
+		"Android",
 		"WindowsNoEditor"
 	]
 }
