@@ -13,7 +13,7 @@ This template consists of virtual reality compatible pawn and settings, ready to
 
 ### Compatible with the following Unreal Engine versions:
 * Unreal Engine 4.20, Oculus-branch, latest commit e8c8be1 (Nov 14, 2018), found at https://github.com/Oculus-VR/UnrealEngine/tree/4.20 
-* Unreal Engine 4.21*, Oculus-branch, latest commit 5b6d633 (Dec 20, 2018), found at https://github.com/Oculus-VR/UnrealEngine 
+* Unreal Engine 4.21*, Oculus-branch, latest commit 7355b71 (Jan 30, 2019), found at https://github.com/Oculus-VR/UnrealEngine 
 
 
 ### What’s new in version 5.0
@@ -21,7 +21,9 @@ This template consists of virtual reality compatible pawn and settings, ready to
 * More stable
 * Use latest Oculus implementations (splash screen, play area limits, smart use of camera fade, etc).
 * Unreal 4.20 & 4.21
-* Uses Oculus SDK 1.32 & Oculus Avatar SDK 1.31
+* Unreal 4.20: Uses Oculus Platform SDK 1.24, OVR Plugin 1.31, Audio SDK 1.18
+* Unreal 4.21: Uses Oculus Platform SDK 1.34, OVR Plugin 1.32, Audio SDK 1.34
+* Uses Oculus Avatar SDK 1.31
 * Single & Multiplayer Oculus Avatars
 * Compatible Oculus Rift & Oculus Go, Oculus Quest-ready
 
