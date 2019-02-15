@@ -30,19 +30,6 @@ struct FAvatarPacket3
 		uint32 packetSequenceNumber;
 };
 
-/*USTRUCT(BlueprintType)
-struct FLocalHandTransforms
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, Category = "OculusAvatar")
-		FVector LocalLocation;
-	UPROPERTY(BlueprintReadWrite, Category = "OculusAvatar")
-		FQuat LocalQuaternion;
-	UPROPERTY(BlueprintReadWrite, Category = "OculusAvatar")
-		FVector Size;
-};*/
-
 UENUM(BlueprintType)
 enum class EAvatarLevelOfDetail : uint8
 {
@@ -73,10 +60,6 @@ public:
 		int32 PartC;
 	UPROPERTY(BlueprintReadOnly, Category = "OculusAvatar")
 		bool bRemoteAvatarIsLoaded;
-	//UPROPERTY(BlueprintReadWrite, Replicated, Category = "OculusAvatar")
-	//	TArray<float> RightHandTransformsArray;
-	//UPROPERTY(BlueprintReadWrite, Replicated, Category = "OculusAvatar")
-		//TArray<FLocalHandTransforms> LocalHandTransformsArray2;
 
 	/*Reducing Draw Calls with the Combine Meshes Option
 	Each avatar in your scene requires 11 draw calls per eye per frame (22 total). The Combine Meshes option
@@ -103,17 +86,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
 		void FetchRemoteAvatar();
 	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
-		void ChangeLeftHandPose();
-	//UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
-	//	void ChangeRightHandPose();
-	//UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
-	//	ovrAvatarTransform ConvertTransformsOculus(TArray<float> LocalTransforms, int32 Index);
-	//UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
-	//	TArray <ovrAvatarTransform> SetHandTransform(int32 Index);
-	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
 		void SetRightHandTransform(TArray<float> RightHandTransformsArray);
+	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
+		void ResetRightHandTransform();
+	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
+		void SetLeftHandTransform(TArray<float> RightHandTransformsArray);
+	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
+		void ResetLeftHandTransform();
 
-	
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginDestroy() override;
@@ -130,7 +110,6 @@ private:
 	float LatencyTick = 0.f;
 	float CurrentPacketTime = 0.f;
 	ovrAvatarPacket* CurrentPacket = nullptr;
-	//bool AvatarRequested;
 	uint32 NextAvatarSequenceNumber = 0;
 	FAvatarPacket3 CurrentPacketStruct;
 	FString PacketKey;
@@ -140,7 +119,6 @@ private:
 
 	int64 finalAvatar = 0;
 	ovrAvatarTransform ConvertedTransform;
-	//TArray <ovrAvatarTransform> gAvatarRightHandTrans2;
 
 	FDelegateHandle OnLoginCompleteDelegateHandle;
 

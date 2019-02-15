@@ -5,7 +5,6 @@
 #include "Modules/ModuleManager.h"
 #include "Features/IModularFeatures.h"
 #include "Interfaces/IPluginManager.h"
-//#include "ProteusAvatarsLibrary/ExampleLibrary.h"
 #include "ProteusOvrAvatarManager.h"
 
 #define LOCTEXT_NAMESPACE "FProteusAvatarsModule"
@@ -20,33 +19,11 @@ void FProteusAvatarsModule::StartupModule()
 	
 	// Add on the relative location of the third party dll and load it
 	FString LibraryPath;
-	//LibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/ThirdParty/ProteusAvatarsLibrary/Win64/ExampleLibrary.dll"));
-
-	//ExampleLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;*/
-
 	FProteusOvrAvatarManager::Get().InitializeSDK();
-
-	/*
-	if (ExampleLibraryHandle)
-	{
-		// Call the test function in the third party library that opens a message box
-		//ExampleLibraryFunction();
-	}
-	else
-	{
-		//FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ThirdPartyLibraryError", "Failed to load example third party library"));
-	}*/
 }
 
 void FProteusAvatarsModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
-
-	// Free the dll handle
-	//FPlatformProcess::FreeDllHandle(ExampleLibraryHandle);
-	//ExampleLibraryHandle = nullptr;
-
 	FProteusOvrAvatarManager::Get().ShutdownSDK();
 	FProteusOvrAvatarManager::Destroy();
 }

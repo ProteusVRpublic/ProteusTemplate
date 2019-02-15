@@ -67,6 +67,7 @@ public:
 	void UpdateFromPacket(ovrAvatarPacket* packet, const float time);
 
 	void SetVoiceVisualValue(float value) { VoiceVisualValue = FMath::Clamp(value, 0.f, 1.f); }
+
 protected:
 	static FString HandNames[HandType_Count];
 	static FString BodyName;
