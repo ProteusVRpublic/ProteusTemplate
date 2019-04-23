@@ -1,16 +1,22 @@
 
 #include "ProteusLocalAvatar.h"
-#include "ProteusOvrAvatarManager.h"
-// \Plugins\Runtime\Oculus\OculusAvatar\Source\Public\OvrAvatarManager.h
+#include "OvrAvatarManager.h"
 #include "Object.h"
-// D:\Source\Runtime\CoreUObject\Public\UObject\Object.h
+#include "OVRLipSyncLiveActorComponent.h"
+#include "OVRLipSyncPlaybackActorComponent.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundWave.h"
+#include "IConsoleManager.h"
 
 static const uint32_t HAND_JOINTS = 25;
 
 AProteusLocalAvatar::AProteusLocalAvatar()
 {
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("LocalAvatarRoot"));
-	AvatarComponent = CreateDefaultSubobject<UProteusOvrAvatar>(TEXT("LocalAvatar"));
+	AvatarComponent = CreateDefaultSubobject<UOvrAvatar>(TEXT("LocalAvatar"));
+	PlayBackLipSyncComponent = CreateDefaultSubobject<UOVRLipSyncPlaybackActorComponent>(TEXT("CannedLipSync"));
+	AudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("LocalAvatarAudio"));
+	LipSyncComponent = CreateDefaultSubobject<UOVRLipSyncActorComponent>(TEXT("LocalLipSync"));
 
 	PrimaryActorTick.bCanEverTick = true;
 	AutoPossessPlayer = EAutoReceiveInput::Disabled;
@@ -22,291 +28,230 @@ AProteusLocalAvatar::AProteusLocalAvatar()
 	NetPriority = 5.0f;
 }
 
+void AProteusLocalAvatar::PreInitializeComponents()
+{
+	Super::PreInitializeComponents();
+	UE_LOG(LogTemp, Warning, TEXT("FCT: PREINITIALIZE COMPONENTS"));
+	if (UseCannedLipSyncPlayback)
+	{
+		FString playbackAssetPath = TEXT("/Game/Audio/vox_lp_01_LipSyncSequence");
+		auto sequence = LoadObject<UOVRLipSyncFrameSequence>(nullptr, *playbackAssetPath, nullptr, LOAD_None, nullptr);
+		PlayBackLipSyncComponent->Sequence = sequence;
+
+		FString AudioClip = TEXT("/Game/Audio/vox_lp_01");
+		auto SoundWave = LoadObject<USoundWave>(nullptr, *AudioClip, nullptr, LOAD_None, nullptr);
+
+		if (SoundWave)
+		{
+			SoundWave->bLooping = 1;
+			AudioComponent->Sound = SoundWave;
+		}
+	}
+#if PLATFORM_WINDOWS
+	auto SilenceDetectionThresholdCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("voice.SilenceDetectionThreshold"));
+	SilenceDetectionThresholdCVar->Set(0.f);
+#endif
+}
+
 void AProteusLocalAvatar::BeginPlay()
 {
 	Super::BeginPlay();
+	UE_LOG(LogTemp, Warning, TEXT("BEGIN PLAY"));
+	/*	if (UseCannedLipSyncPlayback)
+		{
+		PlayBackLipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
+		}
+		else
+		{
+		LipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
+		LipSyncComponent->Start();
+		}*/
 }
+
+void AProteusLocalAvatar::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	LipSyncComponent->OnVisemesReady.RemoveDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
+	PlayBackLipSyncComponent->OnVisemesReady.RemoveDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
+	if (!UseCannedLipSyncPlayback)
+	{
+		LipSyncComponent->Stop();
+	}
+}
+
+/*void AProteusLocalAvatar::RemoveComponents()
+{
+	if (AvatarComponent != NULL)
+	{AvatarComponent->DestroyComponent();}
+	if (PlayBackLipSyncComponent != NULL)
+	{PlayBackLipSyncComponent->Destroy();}
+	if (AudioComponent != NULL)
+	{AudioComponent->Destroy();}
+	if (LipSyncComponent != NULL)
+	{LipSyncComponent->Destroy();}
+	if (LipSyncComponent != NULL)
+	{Destroy();}
+}*/
 
 void AProteusLocalAvatar::BeginDestroy()
 {
 	Super::BeginDestroy();
-	FProteusOvrAvatarManager::Get().UnregisterRemoteAvatar(PacketKey);
+	//bAvatarIsLocal = (Controller && Controller->IsLocalController());
+	//if ((!bAvatarIsLocal)) { FProteusOvrAvatarManager::Get().UnregisterRemoteAvatar(OculusID); }
 }
 
 void AProteusLocalAvatar::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	bAvatarIsLocal = (Controller && Controller->IsLocalController());
-
-	if ((bAvatarIsLocal) && AvatarComponent)
+	if (IsUsingAvatars)
 	{
-		UpdatePacketRecording(DeltaTime);
-	}
+		bAvatarIsLocal = (Controller && Controller->IsLocalController());
 
-	if ((!bAvatarIsLocal) && AvatarComponent)
-	{
-		LatencyTick += DeltaTime;
-		//this is a remote avatar so we need to get packets from the local AvatarManager queue
-		if (!CurrentPacket && LatencyTick > BufferLatency)
+		if ((bAvatarIsLocal) && AvatarComponent)
 		{
-			//we don't have a packet, go get one from the local queue
-			CurrentPacket = FProteusOvrAvatarManager::Get().RequestAvatarPacket(PacketKey);
-			//if (!CurrentPacket)
-				//UE_LOG_ONLINE(Verbose, TEXT("REMOTEAVATAR::Tick Tried to get a packet but got NULL - Remote Avatar - packetKey: %s"), *PacketKey);
+			UpdatePacketRecording(DeltaTime);
 		}
 
-		if (CurrentPacket)
+		else if ((!bAvatarIsLocal) && AvatarComponent)
 		{
-			//SetActorHiddenInGame(false);//do we need this?
-			//UE_LOG_ONLINE(VeryVerbose, TEXT("REMOTEAVATAR::Tick we have a packet for remote avatar and playing back - packetKey: %s"), *PacketKey);
-			const float PacketLength = ovrAvatarPacket_GetDurationSeconds(CurrentPacket);
-			AvatarComponent->UpdateFromPacket(CurrentPacket, FMath::Min(PacketLength, CurrentPacketTime));
 			CurrentPacketTime += DeltaTime;
-
-			if (CurrentPacketTime > PacketLength)
-			{
-				ovrAvatarPacket_Free(CurrentPacket);
-				CurrentPacket = nullptr;
-				CurrentPacketTime = CurrentPacketTime - PacketLength;
-			}
+			AvatarComponent->UpdateFromPacket(CurrentPacket, FMath::Min(CurrentPacketTime, CurrentPacketLength));
 		}
 	}
 }
 
-//FETCH AVATAR ID & LOGIN
-void AProteusLocalAvatar::FetchAvatarID()
+void AProteusLocalAvatar::InitializeLocalAvatar(FString OculusUserID)
 {
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_FetchAvatarID has fired!"));
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_PartA is %d, PartB is %d, PartC is %d"), PartA, PartB, PartC);
+	UE_LOG(LogTemp, Warning, TEXT("InitializeLocalAvatar"));
+	UE_LOG(LogTemp, Warning, TEXT("InitializeLocalAvatar: PacketKey is %s"), *OculusUserID);
 
-	//CONVERT STRING TO INT64, RETURNS INT64 finalAvatar
-		ConvertAvatarID(PartA, PartB, PartC);
-
-	ovrAvatarAssetLevelOfDetail LevelofDetail;
-	if (AvatarLevelofDetail == EAvatarLevelOfDetail::AvatarLevelOfDetail_One) { LevelofDetail = ovrAvatarAssetLevelOfDetail_One; }
-	else if (AvatarLevelofDetail == EAvatarLevelOfDetail::AvatarLevelOfDetail_Three) { LevelofDetail = ovrAvatarAssetLevelOfDetail_Three; }
-	else { LevelofDetail = ovrAvatarAssetLevelOfDetail_Five; }
-
-	AvatarComponent->RequestAvatar(finalAvatar, LevelofDetail, bUseCombinedMeshes);
-	UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_AVATAR REQUESTED is %llu"), finalAvatar);
-	StringAvatarID(finalAvatar);
-	UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_StartPacketRecording has fired!"));
-	AvatarComponent->StartPacketRecording();
-	UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_PacketKey Name: %s"), *PacketKey);
-
-	AvatarComponent->SetVisibilityType(ovrAvatarVisibilityFlag_FirstPerson);
-	UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_Visibility THIRD PERSON"));
-	AvatarComponent->SetPlayerType(UProteusOvrAvatar::ePlayerType::Local);
-	SetActorHiddenInGame(false);
-	bLocalAvatarIsLoaded = true;
-	UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_IS FINALLY LOADED"));
-
-		AvatarHands[UProteusOvrAvatar::HandType_Left] = nullptr;
-		AvatarHands[UProteusOvrAvatar::HandType_Right] = nullptr;
-
-		Online::GetVoiceInterface()->StartNetworkedVoice(0);
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_StartNetworkedVoice has fired!"));
-}
-
-const int64 AProteusLocalAvatar::ConvertAvatarID(int32 PartG, int32 PartH, int32 PartI)
-{
-		UE_LOG(LogTemp, Warning, TEXT("ConvertAvatarID has fired!"));
-		UE_LOG(LogTemp, Warning, TEXT("ConvertAvatarID PartG(rough) is %d, PartH(rough) is %d, PartI(rough) is %d"), PartG, PartH, PartI);
-
-	int64 final1 = (int64)PartG;
-	int64 final2 = (int64)PartH;
-	int64 final3 = (int64)PartI;
-
-	//finalAvatar = 2423817077660833;
-	//finalAvatar = 1376786192353530;
-	finalAvatar = final1 * 10000000000 + final2 * 100000 + final3;
-
-		UE_LOG(LogTemp, Warning, TEXT("ConvertAvatarID PartG (final) is %d, PartH (final) is %d, PartI (final) is %d"), final1, final2, final3);
-
-	return finalAvatar;
-}
-
-const FString AProteusLocalAvatar::StringAvatarID(const int64 AvatarIDPre)
-{
-	bAvatarIsLocal = (Controller && Controller->IsLocalController());
-	if ((bAvatarIsLocal))
+#if PLATFORM_ANDROID
+	ovrAvatarAssetLevelOfDetail lod = ovrAvatarAssetLevelOfDetail_Three;
+#else
+	ovrAvatarAssetLevelOfDetail lod = ovrAvatarAssetLevelOfDetail_Five;
+#endif
+	if (IsUsingAvatars)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_StringAvatarID has fired!"));
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_AvatarIDPre to convert to string is %llu"), AvatarIDPre);
-
-		char temp[21];
-		//sprintf_s(temp, "%llu", AvatarIDPre);
-		sprintf(temp, "%llu", AvatarIDPre);
-		PacketKey = temp;
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_PacketKey is now %s"), *PacketKey);
-		return PacketKey;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("REMOTEAVATAR_StringAvatarID has fired!"));
-		UE_LOG(LogTemp, Warning, TEXT("REMOTEAVATAR_AvatarIDPre to convert to string is %llu"), AvatarIDPre);
-
-		char temp[21];
-		sprintf(temp, "%llu", AvatarIDPre);
-		PacketKey = temp;
-		UE_LOG(LogTemp, Warning, TEXT("REMOTEAVATAR_PacketKey is now %s"), *PacketKey);
-		return PacketKey;
-	}
-}
-
-void AProteusLocalAvatar::OnLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error)
-{
-	IOnlineIdentityPtr OculusIdentityInterface = Online::GetIdentityInterface();
-	OculusIdentityInterface->ClearOnLoginCompleteDelegate_Handle(0, OnLoginCompleteDelegateHandle);
-	
-		ovrAvatarAssetLevelOfDetail LevelofDetail;
-		if (AvatarLevelofDetail == EAvatarLevelOfDetail::AvatarLevelOfDetail_One) { LevelofDetail = ovrAvatarAssetLevelOfDetail_One; }
-		else if (AvatarLevelofDetail == EAvatarLevelOfDetail::AvatarLevelOfDetail_Three) { LevelofDetail = ovrAvatarAssetLevelOfDetail_Three; }
-		else { LevelofDetail = ovrAvatarAssetLevelOfDetail_Five; }
-
-		AvatarComponent->RequestAvatar(finalAvatar, LevelofDetail, bUseCombinedMeshes);
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_AVATAR REQUESTED is %llu"), finalAvatar);
-		StringAvatarID(finalAvatar);
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_StartPacketRecording has fired!"));
+		if (UseCannedLipSyncPlayback)
+		{
+			PlayBackLipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
+		}
+		else
+		{
+			LipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
+			LipSyncComponent->Start();
+		}
+		uint64 OculusID64 = FCString::Strtoui64(*OculusUserID, NULL, 10);
+		AvatarComponent->RequestAvatar(OculusID64, lod, UseCombinedMesh);
+		UE_LOG(LogTemp, Warning, TEXT("InitializeLocalAvatar: Request Avatar %llu"), OculusID64);
+		AvatarComponent->SetPlayerType(UOvrAvatar::ePlayerType::Local);
 		AvatarComponent->StartPacketRecording();
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_PacketKey Name: %s"), *PacketKey);
+		AvatarComponent->SetVisibilityType(ovrAvatarVisibilityFlag_ThirdPerson);
+		AvatarHands[UOvrAvatar::HandType_Left] = nullptr;
+		AvatarHands[UOvrAvatar::HandType_Right] = nullptr;
+		}
+	UE_LOG(LogTemp, Warning, TEXT("Local Avatar: StartPacketRecording has fired!"));
+	Online::GetVoiceInterface()->StartNetworkedVoice(0);
+	UE_LOG(LogTemp, Warning, TEXT("Local Avatar: StartNetworkedVoice has fired!"));
+	SetActorHiddenInGame(false);
+}
 
-		AvatarComponent->SetVisibilityType(ovrAvatarVisibilityFlag_FirstPerson);
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_Visibility THIRD PERSON"));
-		AvatarComponent->SetPlayerType(UProteusOvrAvatar::ePlayerType::Local);
-		SetActorHiddenInGame(false);
-		bLocalAvatarIsLoaded = true;
-		UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR_IS FINALLY LOADED"));
+void AProteusLocalAvatar::InitializeRemoteAvatar()
+{
+	bRemoteAvatarIsLoaded = true;
+	UE_LOG(LogTemp, Warning, TEXT("InitializeRemoteAvatar"));
+	UE_LOG(LogTemp, Warning, TEXT("InitializeRemoteAvatar: LOADED"));
+	UE_LOG(LogTemp, Warning, TEXT("InitializeRemoteAvatar: PacketKey is %s"), *OculusID);
+#if PLATFORM_ANDROID
+	ovrAvatarAssetLevelOfDetail lod = ovrAvatarAssetLevelOfDetail_Three;
+#else
+	ovrAvatarAssetLevelOfDetail lod = ovrAvatarAssetLevelOfDetail_Five;
+#endif
+		if (UseCannedLipSyncPlayback)
+		{
+			PlayBackLipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
+		}
+		else
+		{
+			LipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
+			LipSyncComponent->Start();
+		}
+		uint64 OculusID64 = FCString::Strtoui64(*OculusID, NULL, 10);
+		AvatarComponent->RequestAvatar(OculusID64, lod, UseCombinedMesh);
+		UE_LOG(LogTemp, Warning, TEXT("InitializeRemoteAvatar: Request Avatar %llu"), OculusID64);
+		AvatarComponent->SetPlayerType(UOvrAvatar::ePlayerType::Remote);
+		AvatarComponent->SetVisibilityType(ovrAvatarVisibilityFlag_ThirdPerson);
+
+	SetActorHiddenInGame(false);
+
+	//FProteusOvrAvatarManager::Get().RegisterRemoteAvatar(OculusID);
+	//UE_LOG(LogTemp, Warning, TEXT("InitializeRemoteAvatar: RegisterRemoteAvatarGet %s"), *OculusID);
 }
 
 void AProteusLocalAvatar::UpdatePacketRecording(float DeltaTime)
 {
-	if (!PacketSettings.Initialized)
-		{
+	ovrAvatarPacket* Packet = AvatarComponent->EndPacketRecording();
+
+	if (Packet == nullptr && AvatarComponent)
+	{
+		// Nothing to do, so start recording again
 		AvatarComponent->StartPacketRecording();
-		PacketSettings.AccumulatedTime = 0.f;
-		PacketSettings.RecordingFrames = true;
-		PacketSettings.Initialized = true;
-		}
+		return;
+	}
 
-	if (PacketSettings.RecordingFrames)
-		{
-		PacketSettings.AccumulatedTime += DeltaTime;
-		ovrAvatarPacket* packet = AvatarComponent->EndPacketRecording();
+	const uint32_t PacketSize = ovrAvatarPacket_GetSize(Packet);
 
-		if (packet == nullptr)
-			{
-			//nothing to do, so start recording again
-			//UE_LOG_ONLINE(VeryVerbose, TEXT("LOCALAVATAR::UpdatePacketRecording - packet == nullptr"));
-			AvatarComponent->StartPacketRecording();
-			return;
-			}
+	TArray<uint8>& PacketDataBuffer = ReplicatedPacketData.AvatarPacketData;
+	PacketDataBuffer.SetNumUninitialized(PacketSize);
 
-		//UE_LOG_ONLINE(VeryVerbose, TEXT("LOCALAVATAR::UpdatePacketRecording - created a packet"));
-		uint8_t* Buffer;
-		uint32_t BufferSize;
-		/// Get the size of a recorded packet.
-		/// \param packet opaque pointer to the packet
-		/// \return size of the packet in bytes
-		BufferSize = ovrAvatarPacket_GetSize(packet);
-		//UE_LOG_ONLINE(VeryVerbose, TEXT("LOCALAVATAR::UpdatePacketRecording - BufferSize =   ovrAvatarPacket_GetSize(): %d"), BufferSize);
-		Buffer = new uint8_t[BufferSize];
-		/// Write a packet to a buffer.
-		/// \param packet opaque pointer to the packet
-		/// \param targetSize size of the buffer to write to
-		/// \param targetBuffer the buffer to write to
-		/// \return size of the packet in bytes
+	if (ovrAvatarPacket_Write(Packet, PacketSize, PacketDataBuffer.GetData()))
+	{
+		// Send client packet data to server
+		ServerHandleAvatarPacket(ReplicatedPacketData);
 
-		if (ovrAvatarPacket_Write(packet, BufferSize, Buffer))
-			{
-			//UE_LOG_ONLINE(VeryVerbose, TEXT("LOCALAVATAR::UpdatePacketRecording - packing USTRUCT"), BufferSize);
-			//pack data into our Struct array
-			CurrentPacketStruct.AvatarPacketData.Append(Buffer, BufferSize);
-			CurrentPacketStruct.packetSequenceNumber = NextAvatarSequenceNumber++;
-			//UE_LOG(LogTemp, Warning, TEXT("LOCALAVATAR packetSequenceNumber is %d and PacketKey is %s"), CurrentPacketStruct.packetSequenceNumber, *PacketKey);
-			
-			//now send our UStruct to the server in the RPC call:
-			//UE_LOG_ONLINE(VeryVerbose, TEXT("LOCALAVATAR::UpdatePacketRecording - Calling HandleAvatarPacket()"));
-			ServerHandleAvatarPacket(CurrentPacketStruct); //RPC Call to server with USTRUCT data.
-			//clear out the current packet data
-			CurrentPacketStruct.AvatarPacketData.Empty();
-			//CurrentPacketStruct = {};
-			delete[] Buffer;
-			//packet handled, free it up and start recording again
-			ovrAvatarPacket_Free(packet);
-			AvatarComponent->StartPacketRecording();
-			}
-		//else
-		//UE_LOG_ONLINE(VeryVerbose, TEXT("LOCALAVATAR::UpdatePacketRecording - FAILED on ovrAvatarPacket_Write Packet: %llu"), packet);
-		}
-	
+		// Packet handled, free it up and start recording again
+		ovrAvatarPacket_Free(Packet);
+		AvatarComponent->StartPacketRecording();
+	}
 }
 
-void AProteusLocalAvatar::FetchRemoteAvatar()
-{
-	UE_LOG(LogTemp, Warning, TEXT("REMOTEAVATAR_FetchRemoteAvatar has fired!"));
-	UE_LOG(LogTemp, Warning, TEXT("REMOTEVATAR_FetchRemoteAvatar PartA is %d, PartB is %d, PartC is %d"), PartA, PartB, PartC);
-
-	ConvertAvatarID(PartA, PartB, PartC);
-
-	ovrAvatarAssetLevelOfDetail LevelofDetail;
-	if (AvatarLevelofDetail == EAvatarLevelOfDetail::AvatarLevelOfDetail_One) {LevelofDetail = ovrAvatarAssetLevelOfDetail_One;}
-	else if (AvatarLevelofDetail == EAvatarLevelOfDetail::AvatarLevelOfDetail_Three) {LevelofDetail = ovrAvatarAssetLevelOfDetail_Three;}
-	else {LevelofDetail = ovrAvatarAssetLevelOfDetail_Five;}
-
-	AvatarComponent->RequestAvatar(finalAvatar, LevelofDetail, bUseCombinedMeshes);
-	//UE_LOG(LogTemp, Warning, TEXT("REMOTEAVATAR_AVATAR REQUESTED is %llu"), finalAvatar);
-	StringAvatarID(finalAvatar);
-	AvatarComponent->SetVisibilityType(ovrAvatarVisibilityFlag_ThirdPerson);
-	AvatarComponent->SetPlayerType(UProteusOvrAvatar::ePlayerType::Remote);
-	
-	//UE_LOG(LogTemp, Warning, TEXT("REMOTEAVATAR_Visibility REMOTE"));
-	SetActorHiddenInGame(false);
-	bRemoteAvatarIsLoaded = true;
-	//UE_LOG(LogTemp, Warning, TEXT("REMOTEAVATAR_IS FINALLY LOADED"));
-	FProteusOvrAvatarManager::Get().RegisterRemoteAvatar(PacketKey);
-}
-
-void AProteusLocalAvatar::ServerHandleAvatarPacket_Implementation(FAvatarPacket3 ThePacket)
+void AProteusLocalAvatar::ServerHandleAvatarPacket_Implementation(const FOculusAvatarPacket& PacketData)
 {
 	//The packet has already been validated to contain data.  Updated our replicated property to fire the callback on all clients.
-	R_AvatarPacket = ThePacket;
+	ReplicatedPacketData = PacketData;
 	//ClientRPCReceivePackets(ThePacket);//make all connected machines call this to do something with the packet
-	OnRep_ReceivedPacket(); //force server to call the replication callback since it wont fire for server automatically
+	OnRep_PacketData(); //force server to call the replication callback since it wont fire for server automatically
 }
 
-bool AProteusLocalAvatar::ServerHandleAvatarPacket_Validate(FAvatarPacket3 ThePacket)
+bool AProteusLocalAvatar::ServerHandleAvatarPacket_Validate(const FOculusAvatarPacket& PacketData)
 {
-	if ((ThePacket.AvatarPacketData.Num() > 0) /*&& (!ThePacket.PacketKey.IsEmpty())*/)
-	{
 		return true;
-	}
-	return false;
 }
 
 //this function should be called on all client instances when the server has updated the R_AvatarPacket property meaning there is a new packet to handle.
 //we also call this function explicitly on the server to process packet data
-void AProteusLocalAvatar::OnRep_ReceivedPacket()
+void AProteusLocalAvatar::OnRep_PacketData()
 {
 	bAvatarIsLocal = (Controller && Controller->IsLocalController());
-	if ((!bAvatarIsLocal))
+	if ((!bAvatarIsLocal) && AvatarComponent)
 	{
-		uint32_t BufferSize;
-		uint8_t* Buffer;
-		BufferSize = R_AvatarPacket.AvatarPacketData.Num();
-		//UE_LOG(LogTemp, Warning, TEXT("REMOTEAVATAR_BufferSize is %d"), BufferSize);
+		const TArray<uint8>& PacketData = ReplicatedPacketData.AvatarPacketData;
 
-		Buffer = new uint8_t[BufferSize];
-		for (uint32_t elementIdx = 0; elementIdx < BufferSize; elementIdx++)
+		// Read ovrAvatarPacket from buffer
+		if (ovrAvatarPacket* const NewPacket = ovrAvatarPacket_Read(PacketData.Num(), PacketData.GetData()))
 		{
-			Buffer[elementIdx] = R_AvatarPacket.AvatarPacketData[elementIdx];
-		}
+			// Clear old ovrAvatarPacket
+			ovrAvatarPacket_Free(CurrentPacket);
 
-		//UE_LOG(LogTemp, Warning, TEXT("REMOTEAVATAR_OnRepReceivedPackets with %s!"), *PacketKey);
-		FProteusOvrAvatarManager::Get().QueueAvatarPacket(Buffer, BufferSize, PacketKey, R_AvatarPacket.packetSequenceNumber);
-		delete[] Buffer;
+			CurrentPacket = NewPacket;
+
+			CurrentPacketTime = 0.001f;
+			CurrentPacketLength = ovrAvatarPacket_GetDurationSeconds(CurrentPacket);
+
+			AvatarComponent->UpdateFromPacket(CurrentPacket, CurrentPacketTime);
+		}
 	}
 }
+
 
 //	Replication List
 void AProteusLocalAvatar::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
@@ -314,14 +259,10 @@ void AProteusLocalAvatar::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	// Replicate to everyone
-	DOREPLIFETIME_CONDITION(AProteusLocalAvatar, R_AvatarPacket, COND_SkipOwner);
-	DOREPLIFETIME(AProteusLocalAvatar, PartA);
-	DOREPLIFETIME(AProteusLocalAvatar, PartB);
-	DOREPLIFETIME(AProteusLocalAvatar, PartC);
-	DOREPLIFETIME(AProteusLocalAvatar, bUseCombinedMeshes);
-	DOREPLIFETIME(AProteusLocalAvatar, AvatarLevelofDetail);
+	DOREPLIFETIME_CONDITION(AProteusLocalAvatar, ReplicatedPacketData, COND_SkipOwner);
+	DOREPLIFETIME(AProteusLocalAvatar, OculusID);
+	DOREPLIFETIME(AProteusLocalAvatar, IsUsingAvatars);
 }
-
 
 void AProteusLocalAvatar::SetRightHandTransform(TArray<float> LocalTransforms)
 {
@@ -361,7 +302,7 @@ void AProteusLocalAvatar::SetRightHandTransform(TArray<float> LocalTransforms)
 	};
 
 	RightHandPoseIndex = eHandPoseState::Custom;
-	AvatarComponent->SetCustomGesture(UProteusOvrAvatar::HandType_Right, gAvatarRightHandTrans, HAND_JOINTS);
+	AvatarComponent->SetCustomGesture(UOvrAvatar::HandType_Right, gAvatarRightHandTrans, HAND_JOINTS);
 }
 
 void AProteusLocalAvatar::ResetRightHandTransform()
@@ -408,11 +349,48 @@ void AProteusLocalAvatar::SetLeftHandTransform(TArray<float> LocalTransforms)
 	};
 
 	LeftHandPoseIndex = eHandPoseState::Custom;
-	AvatarComponent->SetCustomGesture(UProteusOvrAvatar::HandType_Left, gAvatarLeftHandTrans, HAND_JOINTS);
+	AvatarComponent->SetCustomGesture(UOvrAvatar::HandType_Left, gAvatarLeftHandTrans, HAND_JOINTS);
 }
 
 void AProteusLocalAvatar::ResetLeftHandTransform()
 {
 	LeftHandPoseIndex = eHandPoseState::Default;
 	AvatarComponent->SetLeftHandPose(ovrAvatarHandGesture_Default);
+}
+
+void AProteusLocalAvatar::SetLeftHandVisibility(bool LeftHandVisible)
+{
+	AvatarComponent->SetLeftHandVisible(LeftHandVisible);
+}
+
+void AProteusLocalAvatar::SetRightHandVisibility(bool RightHandVisible)
+{
+	AvatarComponent->SetRightHandVisible(RightHandVisible);
+}
+
+void AProteusLocalAvatar::LipSyncVismesReady()
+{
+	if (UseCannedLipSyncPlayback)
+	{
+		AvatarComponent->UpdateVisemeValues(PlayBackLipSyncComponent->GetVisemes());
+	}
+	else
+	{
+		AvatarComponent->UpdateVisemeValues(LipSyncComponent->GetVisemes());
+	}
+}
+
+UOvrAvatar::MaterialType AProteusLocalAvatar::GetOvrAvatarMaterialFromType(AvatarMaterial material)
+{
+	switch (material)
+	{
+	case AvatarMaterial::Masked:
+		return UOvrAvatar::MaterialType::Masked;
+	case AvatarMaterial::Translucent:
+		return UOvrAvatar::MaterialType::Translucent;
+	case AvatarMaterial::Opaque:
+		return UOvrAvatar::MaterialType::Opaque;
+	}
+
+	return UOvrAvatar::MaterialType::Opaque;
 }

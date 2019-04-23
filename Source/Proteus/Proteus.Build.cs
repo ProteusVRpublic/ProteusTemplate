@@ -12,9 +12,9 @@ public class Proteus : ModuleRules
 
         // List of public dependency module names (no path needed) (automatically does the private/public include).
         //These are modules that are required by our public source files
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "Voice" });
 
-        PrivateDependencyModuleNames.AddRange(new string[] { "ProteusAvatars" });
+        PrivateDependencyModuleNames.AddRange(new string[] { "ProteusAvatars", "OVRLipSync" });
 
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

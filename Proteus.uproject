@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "{411F476C-4F06-2CE4-E63B-6487F91ABCF4}",
+	"EngineAssociation": "{ACC867DD-4D96-4BBD-85D3-34848B2AB4E8}",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -12,16 +12,35 @@
 	],
 	"Plugins": [
 		{
-			"Name": "OculusAudio",
-			"Enabled": true
-		},
-		{
 			"Name": "OnlineSubsystemOculus",
 			"Enabled": true
 		},
 		{
 			"Name": "ProteusAvatars",
 			"Enabled": true
+		},
+		{
+			"Name": "OculusAvatar",
+			"Enabled": true
+		},
+		{
+			"Name": "OVRLipSync",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemGooglePlay",
+			"Enabled": false,
+			"SupportedTargetPlatforms": [
+				"Android"
+			]
+		},
+		{
+			"Name": "OnlineSubsystemIOS",
+			"Enabled": false,
+			"SupportedTargetPlatforms": [
+				"IOS",
+				"TVOS"
+			]
 		},
 		{
 			"Name": "SteamVR",

@@ -21,7 +21,9 @@ public class ProteusAvatars : ModuleRules
                 //Access to OVR_Avatar.h and OVR_Avatar_defs.h
                 EngineDirectory + "/Source/ThirdParty/Oculus/LibOVRAvatar/LibOVRAvatar/include",
                 // Access to OculusHMDModule.h
-                EngineDirectory + "/Plugins/Runtime/Oculus/OculusVR/Source/OculusHMD/Private"
+                EngineDirectory + "/Plugins/Runtime/Oculus/OculusVR/Source/OculusHMD/Private",
+                //Access to Avatars Materials
+                EngineDirectory + "/Plugins/Runtime/Oculus/OculusAvatar"
             }
 			);
 
@@ -31,7 +33,8 @@ public class ProteusAvatars : ModuleRules
             new string[]
             {
                 //Access to the module /Source/ThirdParty/Oculus/OVRPlugin
-                "OVRPlugin"
+                "OVRPlugin",
+                "OVRLipSync"
             }
             );
 
@@ -57,7 +60,10 @@ public class ProteusAvatars : ModuleRules
                 "SlateCore",
                 "RenderCore",
                 "OnlineSubsystem",
-                "HeadMountedDisplay"
+                "HeadMountedDisplay",
+                "Voice",
+                "OculusAvatar",
+                "OVRLipSync"
             }
             );
 
@@ -77,7 +83,8 @@ public class ProteusAvatars : ModuleRules
             new string[]
             {
                  //Access to /Plugins/Runtime/Oculus/OculusVR/Source/OculusHMD
-                "OculusHMD"
+                "OculusHMD",
+                "OVRLipSync"
             }
             );
 
@@ -87,7 +94,7 @@ public class ProteusAvatars : ModuleRules
 			new string[]
 			{
             "Core", "CoreUObject", "Engine", "InputCore", "UMG", "Slate", "SlateCore", "RenderCore",
-            "OnlineSubsystem", "HeadMountedDisplay", "OVRPlugin", "OculusHMD","LibOVRAvatar"
+            "OnlineSubsystem", "HeadMountedDisplay", "OVRPlugin", "OculusHMD","LibOVRAvatar", "OculusAvatar", "OVRLipSync"
             }
 			);
 
