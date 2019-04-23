@@ -21,8 +21,10 @@ void UProteusVOIP::EndPlay(EEndPlayReason::Type EndPlayReason)
 
 bool UProteusVOIP::RegisterRemoteTalker(FString OculusID)
 {
+	UE_LOG(LogTemp, Warning, TEXT("RegisterRemoteTalker"));
 	if (bTalkerRegistered)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("RegisterRemoteTalker_01"));
 		if (OculusID != RegisteredTalkerOculusId)
 		{
 			// this talker is already registered
@@ -36,7 +38,7 @@ bool UProteusVOIP::RegisterRemoteTalker(FString OculusID)
 	if (IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get())
 	{
 		auto IdentityInterface = OnlineSub->GetIdentityInterface();
-
+		UE_LOG(LogTemp, Warning, TEXT("RegisterRemoteTalker_02"));
 		if (IdentityInterface.IsValid())
 		{
 			auto uniqueNetId = IdentityInterface->CreateUniquePlayerId(OculusID);
@@ -56,10 +58,11 @@ bool UProteusVOIP::RegisterRemoteTalker(FString OculusID)
 	if (bTalkerRegistered)
 	{
 		RegisteredTalkerOculusId = OculusID;
-		UE_LOG(LogOnlineVoice, Verbose, TEXT("Oculus remote talker registered."));
+		UE_LOG(LogTemp, Warning, TEXT("RegisterRemoteTalker_03 is %s"), *OculusID);
 	}
 
 	return bTalkerRegistered;
+	UE_LOG(LogTemp, Warning, TEXT("RegisterRemoteTalker_04"));
 }
 
 void UProteusVOIP::UnregisterRemoteTalker()
