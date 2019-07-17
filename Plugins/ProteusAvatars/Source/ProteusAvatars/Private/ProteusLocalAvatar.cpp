@@ -1,6 +1,5 @@
 
 #include "ProteusLocalAvatar.h"
-#include "OvrAvatarManager.h"
 #include "Object.h"
 #include "OVRLipSyncLiveActorComponent.h"
 #include "OVRLipSyncPlaybackActorComponent.h"
@@ -9,6 +8,15 @@
 #include "IConsoleManager.h"
 
 static const uint32_t HAND_JOINTS = 25;
+
+std::unordered_map<AvatarLevelOfDetail, ovrAvatarAssetLevelOfDetail, AvatarLevelOfDetailHash> AProteusLocalAvatar::LODMap
+(
+	{
+		{ AvatarLevelOfDetail::Low, ovrAvatarAssetLevelOfDetail_One},
+		{ AvatarLevelOfDetail::Mid, ovrAvatarAssetLevelOfDetail_Three},
+		{ AvatarLevelOfDetail::High, ovrAvatarAssetLevelOfDetail_Five}
+	}
+);
 
 AProteusLocalAvatar::AProteusLocalAvatar()
 {
@@ -32,13 +40,13 @@ void AProteusLocalAvatar::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
 	UE_LOG(LogTemp, Warning, TEXT("FCT: PREINITIALIZE COMPONENTS"));
-	if (UseCannedLipSyncPlayback)
+	/*if (UseCannedLipSyncPlayback)
 	{
-		FString playbackAssetPath = TEXT("/Game/Audio/vox_lp_01_LipSyncSequence");
+		FString playbackAssetPath = TEXT("/Game/Proteus_Multi/vox_lp_01_LipSyncSequence");
 		auto sequence = LoadObject<UOVRLipSyncFrameSequence>(nullptr, *playbackAssetPath, nullptr, LOAD_None, nullptr);
 		PlayBackLipSyncComponent->Sequence = sequence;
 
-		FString AudioClip = TEXT("/Game/Audio/vox_lp_01");
+		FString AudioClip = TEXT("/Game/Proteus_Multi/vox_lp_01");
 		auto SoundWave = LoadObject<USoundWave>(nullptr, *AudioClip, nullptr, LOAD_None, nullptr);
 
 		if (SoundWave)
@@ -46,7 +54,7 @@ void AProteusLocalAvatar::PreInitializeComponents()
 			SoundWave->bLooping = 1;
 			AudioComponent->Sound = SoundWave;
 		}
-	}
+	}*/
 #if PLATFORM_WINDOWS
 	auto SilenceDetectionThresholdCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("voice.SilenceDetectionThreshold"));
 	SilenceDetectionThresholdCVar->Set(0.f);
@@ -57,46 +65,23 @@ void AProteusLocalAvatar::BeginPlay()
 {
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Warning, TEXT("BEGIN PLAY"));
-	/*	if (UseCannedLipSyncPlayback)
-		{
-		PlayBackLipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
-		}
-		else
-		{
-		LipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
-		LipSyncComponent->Start();
-		}*/
 }
-
-void AProteusLocalAvatar::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	LipSyncComponent->OnVisemesReady.RemoveDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
-	PlayBackLipSyncComponent->OnVisemesReady.RemoveDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
-	if (!UseCannedLipSyncPlayback)
-	{
-		LipSyncComponent->Stop();
-	}
-}
-
-/*void AProteusLocalAvatar::RemoveComponents()
-{
-	if (AvatarComponent != NULL)
-	{AvatarComponent->DestroyComponent();}
-	if (PlayBackLipSyncComponent != NULL)
-	{PlayBackLipSyncComponent->Destroy();}
-	if (AudioComponent != NULL)
-	{AudioComponent->Destroy();}
-	if (LipSyncComponent != NULL)
-	{LipSyncComponent->Destroy();}
-	if (LipSyncComponent != NULL)
-	{Destroy();}
-}*/
 
 void AProteusLocalAvatar::BeginDestroy()
 {
 	Super::BeginDestroy();
-	//bAvatarIsLocal = (Controller && Controller->IsLocalController());
-	//if ((!bAvatarIsLocal)) { FProteusOvrAvatarManager::Get().UnregisterRemoteAvatar(OculusID); }
+}
+
+void AProteusLocalAvatar::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if /*(UseCannedLipSyncPlayback)
+	{
+		PlayBackLipSyncComponent->OnVisemesReady.RemoveDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
+	}
+	else if */ (UseLocalMicrophone)
+	{
+		LipSyncComponent->OnVisemesReady.RemoveDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
+	}
 }
 
 void AProteusLocalAvatar::Tick(float DeltaTime)
@@ -124,33 +109,39 @@ void AProteusLocalAvatar::InitializeLocalAvatar(FString OculusUserID)
 	UE_LOG(LogTemp, Warning, TEXT("InitializeLocalAvatar"));
 	UE_LOG(LogTemp, Warning, TEXT("InitializeLocalAvatar: PacketKey is %s"), *OculusUserID);
 
-#if PLATFORM_ANDROID
+/*#if PLATFORM_ANDROID
 	ovrAvatarAssetLevelOfDetail lod = ovrAvatarAssetLevelOfDetail_Three;
 #else
 	ovrAvatarAssetLevelOfDetail lod = ovrAvatarAssetLevelOfDetail_Five;
-#endif
+#endif*/
 	if (IsUsingAvatars)
 	{
-		if (UseCannedLipSyncPlayback)
+		if /*(UseCannedLipSyncPlayback)
 		{
 			PlayBackLipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
 		}
-		else
+		else if */ (UseLocalMicrophone)
 		{
 			LipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
 			LipSyncComponent->Start();
 		}
 		uint64 OculusID64 = FCString::Strtoui64(*OculusUserID, NULL, 10);
-		AvatarComponent->RequestAvatar(OculusID64, lod, UseCombinedMesh);
+		AvatarComponent->RequestAvatar(OculusID64, LODMap[LevelOfDetail], UseCombinedMesh);
 		UE_LOG(LogTemp, Warning, TEXT("InitializeLocalAvatar: Request Avatar %llu"), OculusID64);
 		AvatarComponent->SetPlayerType(UOvrAvatar::ePlayerType::Local);
 		AvatarComponent->StartPacketRecording();
-		AvatarComponent->SetVisibilityType(ovrAvatarVisibilityFlag_ThirdPerson);
-		AvatarHands[UOvrAvatar::HandType_Left] = nullptr;
-		AvatarHands[UOvrAvatar::HandType_Right] = nullptr;
+		//AvatarComponent->SetVisibilityType(ovrAvatarVisibilityFlag_ThirdPerson);
+		AvatarComponent->SetVisibilityType(AvatarVisibilityType == AvatarVisibility::FirstPerson? ovrAvatarVisibilityFlag_FirstPerson: ovrAvatarVisibilityFlag_ThirdPerson);
+		AvatarComponent->SetBodyMaterial(GetOvrAvatarMaterialFromType(BodyMaterial));
+		AvatarComponent->SetHandMaterial(GetOvrAvatarMaterialFromType(HandsMaterial));
+		//AvatarHands[UOvrAvatar::HandType_Left] = nullptr;
+		//AvatarHands[UOvrAvatar::HandType_Right] = nullptr;
 		}
 	UE_LOG(LogTemp, Warning, TEXT("Local Avatar: StartPacketRecording has fired!"));
+	if (UseLocalMicrophone)
+{
 	Online::GetVoiceInterface()->StartNetworkedVoice(0);
+}
 	UE_LOG(LogTemp, Warning, TEXT("Local Avatar: StartNetworkedVoice has fired!"));
 	SetActorHiddenInGame(false);
 }
@@ -166,25 +157,15 @@ void AProteusLocalAvatar::InitializeRemoteAvatar()
 #else
 	ovrAvatarAssetLevelOfDetail lod = ovrAvatarAssetLevelOfDetail_Five;
 #endif
-		if (UseCannedLipSyncPlayback)
-		{
-			PlayBackLipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
-		}
-		else
-		{
-			LipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
-			LipSyncComponent->Start();
-		}
 		uint64 OculusID64 = FCString::Strtoui64(*OculusID, NULL, 10);
 		AvatarComponent->RequestAvatar(OculusID64, lod, UseCombinedMesh);
 		UE_LOG(LogTemp, Warning, TEXT("InitializeRemoteAvatar: Request Avatar %llu"), OculusID64);
 		AvatarComponent->SetPlayerType(UOvrAvatar::ePlayerType::Remote);
 		AvatarComponent->SetVisibilityType(ovrAvatarVisibilityFlag_ThirdPerson);
+		AvatarComponent->SetBodyMaterial(GetOvrAvatarMaterialFromType(BodyMaterial));
+		AvatarComponent->SetHandMaterial(GetOvrAvatarMaterialFromType(HandsMaterial));
 
 	SetActorHiddenInGame(false);
-
-	//FProteusOvrAvatarManager::Get().RegisterRemoteAvatar(OculusID);
-	//UE_LOG(LogTemp, Warning, TEXT("InitializeRemoteAvatar: RegisterRemoteAvatarGet %s"), *OculusID);
 }
 
 void AProteusLocalAvatar::UpdatePacketRecording(float DeltaTime)
@@ -368,16 +349,21 @@ void AProteusLocalAvatar::SetRightHandVisibility(bool RightHandVisible)
 	AvatarComponent->SetRightHandVisible(RightHandVisible);
 }
 
+void AProteusLocalAvatar::SetControllersVisibility(bool ControllersVisible)
+{
+	AvatarComponent->SetHandsOnControllers(ControllersVisible);
+}
+
 void AProteusLocalAvatar::LipSyncVismesReady()
 {
-	if (UseCannedLipSyncPlayback)
+	/*if (UseCannedLipSyncPlayback)
 	{
 		AvatarComponent->UpdateVisemeValues(PlayBackLipSyncComponent->GetVisemes());
 	}
 	else
-	{
+	{*/
 		AvatarComponent->UpdateVisemeValues(LipSyncComponent->GetVisemes());
-	}
+	//}
 }
 
 UOvrAvatar::MaterialType AProteusLocalAvatar::GetOvrAvatarMaterialFromType(AvatarMaterial material)
@@ -394,3 +380,8 @@ UOvrAvatar::MaterialType AProteusLocalAvatar::GetOvrAvatarMaterialFromType(Avata
 
 	return UOvrAvatar::MaterialType::Opaque;
 }
+
+/*void AProteusLocalAvatar::AvatarVisibility(bool AvatarVisible)
+{
+	AvatarComponent->SetAvatarVisibility(AvatarVisible);
+}*/

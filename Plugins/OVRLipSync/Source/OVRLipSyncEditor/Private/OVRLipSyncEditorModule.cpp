@@ -58,11 +58,9 @@ bool DecompressSoundWave(USoundWave *SoundWave)
 	AudioDevice->StopAllSounds(true);
 	auto OriginalDecompressionType = SoundWave->DecompressionType;
 	SoundWave->DecompressionType = DTYPE_Native;
-	//NEW FOR 4.22
-	int32 NumPrecacheFrames = 0;
 	if (SoundWave->InitAudioResource(AudioDevice->GetRuntimeFormat(SoundWave)))
 	{
-		USoundWave::FAsyncAudioDecompress Decompress(SoundWave, NumPrecacheFrames);
+		USoundWave::FAsyncAudioDecompress Decompress(SoundWave);
 		Decompress.StartSynchronousTask();
 	}
 	SoundWave->DecompressionType = OriginalDecompressionType;

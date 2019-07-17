@@ -24,7 +24,6 @@ limitations under the License.
 #pragma once
 
 #include "Components/ActorComponent.h"
-#include "TimerManager.h"
 #include "CoreMinimal.h"
 
 #include "OVRLipSyncActorComponentBase.generated.h"

@@ -14,21 +14,12 @@
 #include "Components/ActorComponent.h"
 //#include <stdio.h>
 // \Source\Runtime\Engine\Classes\Components\ActorComponent.h
+#include <unordered_map>
+//
 #include "ProteusLocalAvatar.generated.h"
 // D:\Projects\Proteus_421\Intermediate\Build\Win64\UE4Editor\Inc\Proteus
 
 class UProteusOvrAvatar;
-
-/*USTRUCT()
-struct FAvatarPacket3
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-		TArray<uint8> AvatarPacketData;
-	UPROPERTY()
-		uint32 packetSequenceNumber;
-};*/
 
 USTRUCT()
 struct FOculusAvatarPacket
@@ -39,13 +30,10 @@ struct FOculusAvatarPacket
 		TArray<uint8> AvatarPacketData;
 };
 
-
-UENUM(BlueprintType)
-enum class EAvatarLevelOfDetail : uint8
-{
-	AvatarLevelOfDetail_One, // low LOD, which conserves even more resources
-	AvatarLevelOfDetail_Three, // medium LOD for mobile; his improves performance on Oculus Go and Samsung Gear VR by using lower resolution meshes and textures
-	AvatarLevelOfDetail_Five // Oculus Rift
+UENUM()
+enum class AvatarVisibility : uint8 {
+	FirstPerson = 1 << 0, ///< Visible in the first person view
+	ThirdPerson = 1 << 1, ///< Visible in the third person view
 };
 
 UENUM()
@@ -54,6 +42,30 @@ enum class AvatarMaterial : uint8 {
 	Translucent,
 	Masked
 };
+
+UENUM()
+enum class AvatarLevelOfDetail : uint8 {
+	Low,
+	Mid,
+	High
+};
+
+struct AvatarLevelOfDetailHash
+{
+	template <typename T>
+	std::size_t operator()(T t) const
+	{
+		return static_cast<std::size_t>(t);
+	}
+};
+
+/*UENUM(BlueprintType)
+enum class EAvatarLevelOfDetail : uint8
+{
+	AvatarLevelOfDetail_One, // low LOD, which conserves even more resources
+	AvatarLevelOfDetail_Three, // medium LOD for mobile; his improves performance on Oculus Go and Samsung Gear VR by using lower resolution meshes and textures
+	AvatarLevelOfDetail_Five // Oculus Rift
+};*/
 
 UCLASS()
 class PROTEUSAVATARS_API AProteusLocalAvatar : public APawn
@@ -65,9 +77,6 @@ public:
 
 	UPROPERTY()
 		APawn* OwningPawn = nullptr;
-	//Server side property that when updated will call OnRep_ReceivedPacket() function on all clients.
-	//UPROPERTY(ReplicatedUsing = OnRep_ReceivedPacket)
-	//	FAvatarPacket3 R_AvatarPacket;
 	UPROPERTY(ReplicatedUsing = OnRep_PacketData)
 		FOculusAvatarPacket ReplicatedPacketData;
 	UPROPERTY(BlueprintReadWrite, Replicated, Category = "OculusAvatar")
@@ -85,13 +94,13 @@ public:
 	You should almost always select this option when using avatars. The only drawback to using this option is that
 	you are no longer able to access mesh parts individually, but that is a rare use case
 	*/
-	UPROPERTY(EditAnywhere, Category = "OculusAvatar")
-		bool UseCombinedMesh = true;
+	UPROPERTY(BlueprintReadWrite, Category = "OculusAvatar")
+		bool UseCombinedMesh = false;
 
-	UPROPERTY(EditAnywhere, Category = "Avatar|Materials")
+	UPROPERTY(BlueprintReadWrite, Category = "Avatar|Materials")
 		AvatarMaterial BodyMaterial = AvatarMaterial::Masked;
 
-	UPROPERTY(EditAnywhere, Category = "Avatar|Materials")
+	UPROPERTY(BlueprintReadWrite, Category = "Avatar|Materials")
 		AvatarMaterial HandsMaterial = AvatarMaterial::Translucent;
 
 	UPROPERTY(EditAnywhere, Category = "Avatar|Capabilities")
@@ -106,19 +115,21 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Avatar|Capabilities")
 		bool EnableBase = true;
 
-	//UPROPERTY(EditAnywhere, Category
-	//UFUNCTION(Server, WithValidation, Unreliable, Category = "OculusAvatar")
-	//	void ServerHandleAvatarPacket(FAvatarPacket3 ThePacket);
-	//	void ServerHandleAvatarPacket_Implementation(FAvatarPacket3 ThePacket);
-	//	bool ServerHandleAvatarPacket_Validate(FAvatarPacket3 ThePacket);
+	UPROPERTY(BlueprintReadWrite, Category = "Avatar")
+		bool UseLocalMicrophone = false;
+
+	//Maps First/Third Person Visibility of Avatar
+	UPROPERTY(BlueprintReadWrite, Category = "Avatar")
+		AvatarVisibility AvatarVisibilityType = AvatarVisibility::FirstPerson;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Avatar")
+		AvatarLevelOfDetail LevelOfDetail = AvatarLevelOfDetail::High;
 
 	UFUNCTION(Server, WithValidation, Unreliable)
 	void ServerHandleAvatarPacket(const FOculusAvatarPacket& PacketData);
 	void ServerHandleAvatarPacket_Implementation(const FOculusAvatarPacket& PacketData);
 	bool ServerHandleAvatarPacket_Validate(const FOculusAvatarPacket& PacketData);
 
-	//UFUNCTION()
-	//	void OnRep_ReceivedPacket();
 	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
 		void SetRightHandTransform(TArray<float> RightHandTransformsArray);
 	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
@@ -135,6 +146,10 @@ public:
 		void SetLeftHandVisibility(bool LeftHandVisible);
 	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
 		void SetRightHandVisibility(bool RightHandVisible);
+	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
+		void SetControllersVisibility(bool ControllersVisible);
+	//UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
+	//	void AvatarVisibility(bool AvatarVisible);
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -153,20 +168,9 @@ private:
 
 	void UpdatePacketRecording(float DeltaTime);
 
-	//virtual void Destroy() override;
-	//void RemoveComponents();
-
 	bool bAvatarIsLocal = true;
-	//float BufferLatency = 1.0f; //delay a bit to allow queuing up of movement data to prevent the stream from starving
-	//float LatencyTick = 0.f;
 	float CurrentPacketTime = 0.f;
 	ovrAvatarPacket* CurrentPacket = nullptr;
-	//uint32 NextAvatarSequenceNumber = 0;
-	//FAvatarPacket3 CurrentPacketStruct;
-
-	//ovrAvatarTransform ConvertedTransform;
-
-	//FDelegateHandle OnLoginCompleteDelegateHandle;
 
 	UOvrAvatar* AvatarComponent = nullptr;
 	class UOVRLipSyncPlaybackActorComponent* PlayBackLipSyncComponent = nullptr;
@@ -186,17 +190,10 @@ private:
 	eHandPoseState LeftHandPoseIndex = eHandPoseState::Default;
 	eHandPoseState RightHandPoseIndex = eHandPoseState::Default;
 
-	/*struct FPacketRecordSettings
-	{
-		bool Initialized = false;
-		bool RecordingFrames = false;
-		float UpdateRate = 1.0f / 5.f;  // Lower rate = bigger packets. Try to optimize against fidelity vs Network Overhead.
-		float AccumulatedTime = 0.f;
-	};*/
-
 	TWeakObjectPtr<USceneComponent> AvatarHands[UOvrAvatar::HandType_Count];
-	//FPacketRecordSettings PacketSettings;
 
 	float CurrentPacketLength = 0.f;
-	bool UseCannedLipSyncPlayback = false;
+	//bool UseCannedLipSyncPlayback = false;
+
+	static std::unordered_map<AvatarLevelOfDetail, ovrAvatarAssetLevelOfDetail, AvatarLevelOfDetailHash> LODMap;
 };

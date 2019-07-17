@@ -25,7 +25,7 @@
 
 #include "OVRLipSyncContextWrapper.h"
 #include "Voice/Public/VoiceModule.h"
-
+#include "TimerManager.h"
 #include <algorithm>
 
 #define DEFAULT_SAMPLE_RATE 44100
@@ -101,8 +101,12 @@ void UOVRLipSyncActorComponent::Stop()
 		return;
 	}
 
-	auto &TimerManager = GetWorld()->GetTimerManager();
-	TimerManager.ClearTimer(VoiceCaptureTimer);
+	if (GetWorld())
+	{
+		auto &TimerManager = GetWorld()->GetTimerManager();
+		TimerManager.ClearTimer(VoiceCaptureTimer);
+	}
+
 	VoiceCapture->Stop();
 	VoiceCapture = nullptr;
 
