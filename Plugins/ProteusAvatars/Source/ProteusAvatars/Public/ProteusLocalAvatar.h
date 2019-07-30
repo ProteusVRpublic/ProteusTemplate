@@ -148,8 +148,8 @@ public:
 		void SetRightHandVisibility(bool RightHandVisible);
 	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
 		void SetControllersVisibility(bool ControllersVisible);
-	//UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
-	//	void AvatarVisibility(bool AvatarVisible);
+	UFUNCTION(BlueprintCallable, Category = "OculusAvatar")
+		void AvatarVisibility();
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
