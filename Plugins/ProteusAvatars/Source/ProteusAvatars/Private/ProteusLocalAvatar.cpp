@@ -358,11 +358,11 @@ void AProteusLocalAvatar::LipSyncVismesReady()
 {
 	/*if (UseCannedLipSyncPlayback)
 	{
-		AvatarComponent->UpdateVisemeValues(PlayBackLipSyncComponent->GetVisemes());
+		AvatarComponent->UpdateVisemeValues(PlayBackLipSyncComponent->GetVisemes(), PlayBackLipSyncComponent->GetLaughterScore());
 	}
 	else
 	{*/
-		AvatarComponent->UpdateVisemeValues(LipSyncComponent->GetVisemes());
+		AvatarComponent->UpdateVisemeValues(LipSyncComponent->GetVisemes(), LipSyncComponent->GetLaughterScore());
 	//}
 }
 
@@ -381,7 +381,7 @@ UOvrAvatar::MaterialType AProteusLocalAvatar::GetOvrAvatarMaterialFromType(Avata
 	return UOvrAvatar::MaterialType::Opaque;
 }
 
-/*void AProteusLocalAvatar::AvatarVisibility(bool AvatarVisible)
+void AProteusLocalAvatar::AvatarVisibility()
 {
-	AvatarComponent->SetAvatarVisibility(AvatarVisible);
-}*/
+	AvatarComponent->SetVisibilityType(AvatarVisibilityType == AvatarVisibility::FirstPerson ? ovrAvatarVisibilityFlag_FirstPerson : ovrAvatarVisibilityFlag_ThirdPerson);
+}
