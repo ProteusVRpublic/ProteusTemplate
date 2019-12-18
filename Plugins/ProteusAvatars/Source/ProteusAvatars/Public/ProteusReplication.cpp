@@ -6,259 +6,155 @@
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h"
 
-
 UProteusReplication::UProteusReplication()
 {
-    PrimaryComponentTick.bCanEverTick = true;
-    PrimaryComponentTick.bStartWithTickEnabled = false;
-    PrimaryComponentTick.TickGroup = ETickingGroup::TG_PrePhysics;
-    bAutoActivate = false;
+	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bStartWithTickEnabled = false;
+	//This is the tick group to use if your actor is intended to interact with physics objects, including physics-based attachments.
+	//This way, the actor's movement is complete and can be factored into physics simulation.
+	//Physics simulation data during this tick will be one frame old - i.e.the data that was rendered to the screen last frame.
+	PrimaryComponentTick.TickGroup = ETickingGroup::TG_PrePhysics;
+	bAutoActivate = false;
 
-    bReplicates = true;
-    bIsRemote = false;
+	bReplicates = true;
+	bIsRemote = false;
 }
-
-void UProteusReplication::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-    DOREPLIFETIME_CONDITION(UProteusReplication, ReplicatedVRBodyTransforms, COND_SkipOwner);
-}
-
 
 void UProteusReplication::BeginPlay()
 {
-    Super::BeginPlay();
+	Super::BeginPlay();
 
-    OwningPawn = Cast<APawn>(GetOwner());
+	//Pointer to the Owning Pawn
+	OwningPawn = Cast<APawn>(GetOwner());
 
-    if (OwningPawn == nullptr)
-    {
-        HandleSetupError(TEXT("ProteusReplication component does not work with non-Pawn Actors!"));
-        return;
-    }
-
-    bIsRemote = OwningPawn->Role != ROLE_Authority;
-
-    if (!bHasRegisteredBody && bAutoRegisterBodyComponents)
-    {
-        const bool bRegisterSuccess = AutoRegisterProteusBody();
-
-        if (!bRegisterSuccess)
-        {
-            HandleSetupError(
-                TEXT("ProteusReplication could not find valid VR components to replicate! \
-                        Ensure your Pawn has a camera and left and right motion controllers \
-                        You can set them manually by disabling AutoRegisterBodyComponents and calling RegisterProteusForReplication.")
-            );
-        }
-    }
+	//Is remote only NOT when the Owning Pawn only the server replicates actors to connected clients (clients will never replicate actors to the server)
+	bIsRemote = OwningPawn->Role != ROLE_Authority;
 }
 
-
+//Will enable component tick when head and 2 hands will be registered
 void UProteusReplication::SetComponentTickEnabled(bool bTickEnabled)
 {
-    // Only enable tick if the vr body is registered or a crash may occur
-    if (!bTickEnabled || bHasRegisteredBody)
-    {
-        Super::SetComponentTickEnabled(bTickEnabled);
-    }
-}
-
-void UProteusReplication::Activate(bool bReset)
-{
-    if (bHasRegisteredBody)
-    {
-        Super::Activate(bReset);
-    }
+	if (!bTickEnabled || bHasRegisteredBody)
+	{
+		Super::SetComponentTickEnabled(bTickEnabled);
+	}
 }
 
 void UProteusReplication::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    if (IsAuthoritative())
-    {
-        SendTransformsToServer();
-    }
-    else
-    {
-        if (bLerpToTransform)
-        {
-            LerpReplicatedComponents(DeltaTime);
-        }
-        // !bLerpToTransform handled by OnRep_ReplicatedTransforms
-    }
+	if (IsAuthoritative())
+	{
+		SendTransformsToServer();
+	}
+	else
+	{
+		LerpReplicatedComponents(DeltaTime);
+	}
 }
 
 bool UProteusReplication::IsAuthoritative() const
 {
-    return OwningPawn->IsLocallyControlled();
+	return OwningPawn->IsLocallyControlled();
 }
 
+//Called when RegisterProteusForReplication fires
+void UProteusReplication::Activate(bool bReset)
+{
+	//The activation will happen even if ShouldActivate returns fals
+	Super::Activate(bReset);
+}
+
+//CALLED IN BP
 bool UProteusReplication::RegisterProteusForReplication(USceneComponent* Head, USceneComponent* LeftHand, USceneComponent* RightHand)
 {
-    if (Head == nullptr || LeftHand == nullptr || RightHand == nullptr)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Invalid VR Body components! Please check that you properly connected the pins for RegisterVRBody. Body will not replicate."));
-        return false;
-    }
+	if (Head == nullptr || LeftHand == nullptr || RightHand == nullptr)
+	{
+		return false;
+	}
 
-    HeadComponent = Head;
-    LeftHandComponent = LeftHand;
-    RightHandComponent = RightHand;
+	HeadComponent = Head;
+	LeftHandComponent = LeftHand;
+	RightHandComponent = RightHand;
 
-    bHasRegisteredBody = true;
-    Activate(true);
+	bHasRegisteredBody = true;
+	Activate(true);
 
-    return true;
+	return true;
 }
 
-bool UProteusReplication::AutoRegisterProteusBody()
-{
-    if (const AActor* Owner = GetOwner())
-    {
-        TArray<UCameraComponent*> Cameras;
-        TArray<UMotionControllerComponent*> MotionControllers;
-
-        Owner->GetComponents<UCameraComponent>(Cameras);
-        Owner->GetComponents<UMotionControllerComponent>(MotionControllers);
-
-        UCameraComponent* RegisteredCamera = nullptr;
-        UMotionControllerComponent* RegisteredLeftHand = nullptr;
-        UMotionControllerComponent* RegisteredRightHand = nullptr;
-
-        for (UCameraComponent* Camera : Cameras)
-        {
-            if (Camera->bLockToHmd)
-            {
-                RegisteredCamera = Camera;
-                break;
-            }
-        }
-
-        // If there are cameras but none with bLockToHMD enabled by default
-        // Then we'll just use one that isn't lock to an HMD and assume it will be later
-        if (RegisteredCamera == nullptr && Cameras.Num() > 0)
-        {
-            RegisteredCamera = Cameras[0];
-        }
-
-        for (UMotionControllerComponent* MotionController : MotionControllers)
-        {
-            const FName& MotionSource = MotionController->MotionSource;
-            if (MotionSource == FXRMotionControllerBase::LeftHandSourceId)
-            {
-                RegisteredLeftHand = MotionController;
-            }
-            else if (MotionSource == FXRMotionControllerBase::RightHandSourceId)
-            {
-                RegisteredRightHand = MotionController;
-            }
-        }
-
-        RegisterProteusForReplication(RegisteredCamera, RegisteredLeftHand, RegisteredRightHand);
-    }
-
-    return bHasRegisteredBody;
-}
-
+//TICK
+//Only for locally controlled pawns, on every tick
 void UProteusReplication::SendTransformsToServer()
 {
-    ReplicatedVRBodyTransforms.HeadTransform = HeadComponent->GetRelativeTransform();
-    ReplicatedVRBodyTransforms.LeftHandTransform = LeftHandComponent->GetRelativeTransform();
-    ReplicatedVRBodyTransforms.RightHandTransform = RightHandComponent->GetRelativeTransform();
+	//Define relative transforms for head and 2 hands
+	ReplicatedVRBodyTransforms.HeadTransform = HeadComponent->GetRelativeTransform();
+	ReplicatedVRBodyTransforms.LeftHandTransform = LeftHandComponent->GetRelativeTransform();
+	ReplicatedVRBodyTransforms.RightHandTransform = RightHandComponent->GetRelativeTransform();
 
-    if (bIsRemote)
-    {
-        Server_UpdateReplicationData(ReplicatedVRBodyTransforms);
-    }
+	//If the locally controlled pawns is remote, it will send to server the relative transforms data
+	if (bIsRemote)
+	{
+		Server_UpdateReplicationData(ReplicatedVRBodyTransforms);
+		//NO DEFINITION
+	}
 }
 
-void UProteusReplication::LerpReplicatedComponents(float DeltaTime)
-{
-    const float LerpAlpha = NetworkLocationLerpRate * DeltaTime;
-    LerpReplicatedComponent(HeadComponent, ReplicatedVRBodyTransforms.HeadTransform, DeltaTime, LerpAlpha);
-    LerpReplicatedComponent(LeftHandComponent, ReplicatedVRBodyTransforms.LeftHandTransform, DeltaTime, LerpAlpha);
-    LerpReplicatedComponent(RightHandComponent, ReplicatedVRBodyTransforms.RightHandTransform, DeltaTime, LerpAlpha);
-}
-
-void UProteusReplication::SetToServerTransforms()
-{
-    const FTransform_NetQuantize100& HeadTransform = ReplicatedVRBodyTransforms.HeadTransform;
-    HeadComponent->SetRelativeLocationAndRotation(HeadTransform.Location, HeadTransform.Rotation);
-
-    const FTransform_NetQuantize100& LeftHandTransform = ReplicatedVRBodyTransforms.LeftHandTransform;
-    LeftHandComponent->SetRelativeLocationAndRotation(LeftHandTransform.Location, LeftHandTransform.Rotation);
-
-    const FTransform_NetQuantize100& RightHandTransform = ReplicatedVRBodyTransforms.RightHandTransform;
-    RightHandComponent->SetRelativeLocationAndRotation(RightHandTransform.Location, RightHandTransform.Rotation);
-}
-
-void UProteusReplication::LerpReplicatedComponent(USceneComponent* Component, const FTransform_NetQuantize100& TargetTransform, float DeltaTime, float LerpAlpha)
-{
-    const FTransform_NetQuantize100& OldTransform = Component->GetRelativeTransform();
-    const FTransform_NetQuantize100& NewTransform = LerpTransform(OldTransform, TargetTransform, DeltaTime, LerpAlpha);
-    Component->SetRelativeLocationAndRotation(NewTransform.Location, NewTransform.Rotation);
-}
-
-FTransform_NetQuantize100 UProteusReplication::LerpTransform(const FTransform_NetQuantize100& Start, const FTransform_NetQuantize100& End, float DeltaTime, float Alpha) const
-{
-    // Mixes both regular and constant rate interpolation for smooth updates during fast hand movement and accuracy in small movements
-    const FVector FirstLerpLocation = FMath::Lerp(Start.Location, End.Location, Alpha);
-    const FVector FinalLerpLocation = FMath::VInterpConstantTo(FirstLerpLocation, End.Location, DeltaTime, NetworkLocationConstInterpRate);
-
-    const FQuat StartQuat(Start.Rotation);
-    const FQuat EndQuat(End.Rotation);
-    const FQuat LerpRotation = FQuat::FastLerp(StartQuat, EndQuat, Alpha + .1f);
-
-    return FTransform_NetQuantize100(FinalLerpLocation, LerpRotation.Rotator());
-}
-
-void UProteusReplication::HandleSetupError(const FString& ErrorMessage)
-{
-    FString FinalErrorMessage(ErrorMessage);
-    FinalErrorMessage.Append(TEXT(" Destroying component."));
-
-#if UE_BUILD_DEBUG
-    if (GEngine)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FinalErrorMessage);
-    }
-#endif
-    UE_LOG(LogTemp, Warning, TEXT("%s"), *FinalErrorMessage);
-
-    DestroyComponent();
-}
-
-
-
+//Called from SendTransformsToServer
 bool UProteusReplication::Server_UpdateReplicationData_Validate(const FProteusReplicationData& UpdatedData)
 {
-    return true;
+	return true;
 }
 
 void UProteusReplication::Server_UpdateReplicationData_Implementation(const FProteusReplicationData& UpdatedData)
 {
-    ReplicatedVRBodyTransforms = UpdatedData;
-
-    OnRep_ReplicatedTransforms();
+	ReplicatedVRBodyTransforms = UpdatedData;
 }
 
-bool UProteusReplication::Server_JumpToAuthorityTransforms_Validate()
+//TICK
+//Linearly interpolates between the simulated transforms and the server transforms based on Alpha (100% of A when Alpha=0 and 100% of B when Alpha=1)
+//Alpha = rate per second, = 10*DeltaTime
+void UProteusReplication::LerpReplicatedComponents(float DeltaTime)
 {
-    return true;
+	const float Alpha = 10.f * DeltaTime;
+	LerpReplicatedComponent(HeadComponent, ReplicatedVRBodyTransforms.HeadTransform, DeltaTime, Alpha);
+	LerpReplicatedComponent(LeftHandComponent, ReplicatedVRBodyTransforms.LeftHandTransform, DeltaTime, Alpha);
+	LerpReplicatedComponent(RightHandComponent, ReplicatedVRBodyTransforms.RightHandTransform, DeltaTime, Alpha);
 }
 
-void UProteusReplication::Server_JumpToAuthorityTransforms_Implementation()
+//Called from LerpReplicatedComponents
+void UProteusReplication::LerpReplicatedComponent(USceneComponent* Component, const FTransform_NetQuantize100& TargetTransform, float DeltaTime, float LerpAlpha)
 {
-    SetToServerTransforms();
+	const FTransform_NetQuantize100& OldTransform = Component->GetRelativeTransform();
+	const FTransform_NetQuantize100& NewTransform = LerpTransform(OldTransform, TargetTransform, DeltaTime, LerpAlpha);
+	Component->SetRelativeLocationAndRotation(NewTransform.Location, NewTransform.Rotation);
+}
+
+//Called from LerpReplicatedComponent
+// The constant interpolation rate to the authority location, helps keep small movements exact
+// We const interp from the simulated transforms to the server transforms at this rate per second
+FTransform_NetQuantize100 UProteusReplication::LerpTransform(const FTransform_NetQuantize100& Start, const FTransform_NetQuantize100& End, float DeltaTime, float Alpha) const
+{
+	// Mixes both regular and constant rate interpolation for smooth updates during fast hand movement and accuracy in small movements
+	const FVector FirstLerpLocation = FMath::Lerp(Start.Location, End.Location, Alpha);
+	const FVector FinalLerpLocation = FMath::VInterpConstantTo(FirstLerpLocation, End.Location, DeltaTime, 100.f);
+
+	const FQuat StartQuat(Start.Rotation);
+	const FQuat EndQuat(End.Rotation);
+	const FQuat LerpRotation = FQuat::FastLerp(StartQuat, EndQuat, Alpha + .1f);
+
+	return FTransform_NetQuantize100(FinalLerpLocation, LerpRotation.Rotator());
+}
+
+void UProteusReplication::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(UProteusReplication, ReplicatedVRBodyTransforms, COND_SkipOwner);
 }
 
 void UProteusReplication::OnRep_ReplicatedTransforms()
 {
-    if (!bLerpToTransform)
-    {
-        SetToServerTransforms();
-    }
+	return;
 }
