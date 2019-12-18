@@ -2,7 +2,6 @@
 #include "ProteusLocalAvatar.h"
 #include "Object.h"
 #include "OVRLipSyncLiveActorComponent.h"
-#include "OVRLipSyncPlaybackActorComponent.h"
 #include "Components/AudioComponent.h"
 #include "Sound/SoundWave.h"
 #include "IConsoleManager.h"
@@ -22,7 +21,6 @@ AProteusLocalAvatar::AProteusLocalAvatar()
 {
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("LocalAvatarRoot"));
 	AvatarComponent = CreateDefaultSubobject<UOvrAvatar>(TEXT("LocalAvatar"));
-	PlayBackLipSyncComponent = CreateDefaultSubobject<UOVRLipSyncPlaybackActorComponent>(TEXT("CannedLipSync"));
 	AudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("LocalAvatarAudio"));
 	LipSyncComponent = CreateDefaultSubobject<UOVRLipSyncActorComponent>(TEXT("LocalLipSync"));
 
@@ -40,21 +38,6 @@ void AProteusLocalAvatar::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
 	UE_LOG(LogTemp, Warning, TEXT("FCT: PREINITIALIZE COMPONENTS"));
-	/*if (UseCannedLipSyncPlayback)
-	{
-		FString playbackAssetPath = TEXT("/Game/Proteus_Multi/vox_lp_01_LipSyncSequence");
-		auto sequence = LoadObject<UOVRLipSyncFrameSequence>(nullptr, *playbackAssetPath, nullptr, LOAD_None, nullptr);
-		PlayBackLipSyncComponent->Sequence = sequence;
-
-		FString AudioClip = TEXT("/Game/Proteus_Multi/vox_lp_01");
-		auto SoundWave = LoadObject<USoundWave>(nullptr, *AudioClip, nullptr, LOAD_None, nullptr);
-
-		if (SoundWave)
-		{
-			SoundWave->bLooping = 1;
-			AudioComponent->Sound = SoundWave;
-		}
-	}*/
 #if PLATFORM_WINDOWS
 	auto SilenceDetectionThresholdCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("voice.SilenceDetectionThreshold"));
 	SilenceDetectionThresholdCVar->Set(0.f);
@@ -74,11 +57,7 @@ void AProteusLocalAvatar::BeginDestroy()
 
 void AProteusLocalAvatar::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if /*(UseCannedLipSyncPlayback)
-	{
-		PlayBackLipSyncComponent->OnVisemesReady.RemoveDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
-	}
-	else if */ (UseLocalMicrophone)
+	if (UseLocalMicrophone)
 	{
 		LipSyncComponent->OnVisemesReady.RemoveDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
 	}
@@ -109,18 +88,9 @@ void AProteusLocalAvatar::InitializeLocalAvatar(FString OculusUserID)
 	UE_LOG(LogTemp, Warning, TEXT("InitializeLocalAvatar"));
 	UE_LOG(LogTemp, Warning, TEXT("InitializeLocalAvatar: PacketKey is %s"), *OculusUserID);
 
-/*#if PLATFORM_ANDROID
-	ovrAvatarAssetLevelOfDetail lod = ovrAvatarAssetLevelOfDetail_Three;
-#else
-	ovrAvatarAssetLevelOfDetail lod = ovrAvatarAssetLevelOfDetail_Five;
-#endif*/
 	if (IsUsingAvatars)
 	{
-		if /*(UseCannedLipSyncPlayback)
-		{
-			PlayBackLipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
-		}
-		else if */ (UseLocalMicrophone)
+		if (UseLocalMicrophone)
 		{
 			LipSyncComponent->OnVisemesReady.AddDynamic(this, &AProteusLocalAvatar::LipSyncVismesReady);
 			LipSyncComponent->Start();
@@ -130,12 +100,9 @@ void AProteusLocalAvatar::InitializeLocalAvatar(FString OculusUserID)
 		UE_LOG(LogTemp, Warning, TEXT("InitializeLocalAvatar: Request Avatar %llu"), OculusID64);
 		AvatarComponent->SetPlayerType(UOvrAvatar::ePlayerType::Local);
 		AvatarComponent->StartPacketRecording();
-		//AvatarComponent->SetVisibilityType(ovrAvatarVisibilityFlag_ThirdPerson);
 		AvatarComponent->SetVisibilityType(AvatarVisibilityType == AvatarVisibility::FirstPerson? ovrAvatarVisibilityFlag_FirstPerson: ovrAvatarVisibilityFlag_ThirdPerson);
 		AvatarComponent->SetBodyMaterial(GetOvrAvatarMaterialFromType(BodyMaterial));
 		AvatarComponent->SetHandMaterial(GetOvrAvatarMaterialFromType(HandsMaterial));
-		//AvatarHands[UOvrAvatar::HandType_Left] = nullptr;
-		//AvatarHands[UOvrAvatar::HandType_Right] = nullptr;
 		}
 	UE_LOG(LogTemp, Warning, TEXT("Local Avatar: StartPacketRecording has fired!"));
 	if (UseLocalMicrophone)
@@ -232,7 +199,6 @@ void AProteusLocalAvatar::OnRep_PacketData()
 		}
 	}
 }
-
 
 //	Replication List
 void AProteusLocalAvatar::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
@@ -356,14 +322,7 @@ void AProteusLocalAvatar::SetControllersVisibility(bool ControllersVisible)
 
 void AProteusLocalAvatar::LipSyncVismesReady()
 {
-	/*if (UseCannedLipSyncPlayback)
-	{
-		AvatarComponent->UpdateVisemeValues(PlayBackLipSyncComponent->GetVisemes(), PlayBackLipSyncComponent->GetLaughterScore());
-	}
-	else
-	{*/
 		AvatarComponent->UpdateVisemeValues(LipSyncComponent->GetVisemes(), LipSyncComponent->GetLaughterScore());
-	//}
 }
 
 UOvrAvatar::MaterialType AProteusLocalAvatar::GetOvrAvatarMaterialFromType(AvatarMaterial material)

@@ -59,14 +59,6 @@ struct AvatarLevelOfDetailHash
 	}
 };
 
-/*UENUM(BlueprintType)
-enum class EAvatarLevelOfDetail : uint8
-{
-	AvatarLevelOfDetail_One, // low LOD, which conserves even more resources
-	AvatarLevelOfDetail_Three, // medium LOD for mobile; his improves performance on Oculus Go and Samsung Gear VR by using lower resolution meshes and textures
-	AvatarLevelOfDetail_Five // Oculus Rift
-};*/
-
 UCLASS()
 class PROTEUSAVATARS_API AProteusLocalAvatar : public APawn
 {
@@ -193,7 +185,6 @@ private:
 	TWeakObjectPtr<USceneComponent> AvatarHands[UOvrAvatar::HandType_Count];
 
 	float CurrentPacketLength = 0.f;
-	//bool UseCannedLipSyncPlayback = false;
 
 	static std::unordered_map<AvatarLevelOfDetail, ovrAvatarAssetLevelOfDetail, AvatarLevelOfDetailHash> LODMap;
 };
